@@ -1,0 +1,36 @@
+name: ipypdf
+
+channels:
+  - https://conda.anaconda.org/conda-forge
+
+dependencies:
+  - anaconda-project =0.10.1
+  - pip
+  - python >=3.7,<3.8
+  - python
+  - pywin32
+  - poppler
+  - spacy
+  - ipycanvas
+  - ipycytoscape
+  - ipyevents
+  - ipywidgets
+  - ipytree
+  - jupyterlab >=3.0
+  - numpy <=1.19.3,>=1.13
+  - matplotlib
+  - opencv
+  - pandas
+  - pdf2image
+  - pytesseract
+  - tesseract
+  - traitlets
+  - spacy-model-en_core_web_lg
+  - black
+  - conda-build
+  - flake8
+  - isort
+  - pip
+  - pylint
+  - pytest
+  - pytest-cov

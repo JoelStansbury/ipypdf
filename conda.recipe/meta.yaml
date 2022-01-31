@@ -1,0 +1,60 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: ipypdf
+  version: {{ data['version'] }}
+
+source: # url to recipe or repo
+  path: ..
+
+build:
+  script: {{ PYTHON }} -m pip install -vv .
+  noarch: python
+  
+  entry_points:
+    {% for entry in data['entry_points']['console_scripts'] %}
+      - {{ entry.split('=')[0].strip() }} = {{ entry.split('=')[1].strip() }}
+    {% endfor %}
+  
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - pywin32 # [win]
+    - poppler
+    - spacy
+    - ipycanvas
+    - ipycytoscape
+    - ipyevents
+    - ipywidgets
+    - ipytree
+    - jupyterlab >=3.0
+    - numpy <=1.19.3,>=1.13 # Constrained by paddlepaddle
+    - opencv
+    - pandas
+    - pdf2image
+    - pytesseract
+    - tesseract
+    - traitlets
+    - spacy-model-en_core_web_lg
+
+test:
+  source_files:
+    - tests
+  requires:
+    - pytest
+    - pytest-cov
+  commands:
+    - pytest
+  imports:
+    - ipypdf
+
+about:
+  home: https://github.com/JoelStansbury/ipypdf
+  summary: Jupyter widget for applying nlp to pdf documents
+  license: {{ data.get('license') }}
+  license_file: LICENSE

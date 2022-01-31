@@ -1,0 +1,11 @@
+__pycache__
+Untitled.*
+*.egg-info
+.ipynb_checkpoints
+.vscode/
+*.code-workspace
+envs/
+build/*
+pdfs
+.coverage
+junit.xml
