@@ -36,11 +36,6 @@ setup(
         'widgets/*',
         'style/*'
     ]},
-    entry_points={
-        'console_scripts': [
-            'ipypdf=ipypdf.cli:cli'
-        ]
-    },
     install_requires=requirements,
     keywords='ipypdf',
     classifiers=[
