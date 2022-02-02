@@ -1,4 +1,4 @@
-import cv2
+# import cv2 # Temporarily removing due to conda issues
 import numpy as np
 import PIL.Image as pil
 import pytesseract as tess

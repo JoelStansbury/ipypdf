@@ -12,9 +12,9 @@ from .image_utils import ImageContainer, pil_2_rel
 
 
 def get_ocr_data(path):
-    imgs = ImageContainer(path)
-    rows = []
-    for i, img in enumerate(imgs):
+    imgs = ImageContainer(path, bulk_render=False)
+    for i in range(imgs.info["Pages"]):
+        img = imgs[i]
         # Pass full page into Tesseract
         data = tess.image_to_data(img, config="--psm 1")
         # Parse output into dataframe
@@ -32,26 +32,27 @@ def get_ocr_data(path):
         df["page"] = i
         df["page_width"] = img.width
         df["page_height"] = img.height
-        rows += df.to_dict("records")
-    return pd.DataFrame(rows)
+        yield df.reset_index()
 
 
 def get_text_blocks(path):
-    df = get_ocr_data(path)
-    groups = df.groupby(by=["page", "block_num"]).groups
-    keys = sorted(list(groups.keys()))
-    text_blocks = []
-    for k in keys:
-        word_idxs = groups[k]
-        tmp = df.iloc[word_idxs]
-        w = tmp.to_dict("records")[0]
-        x1 = min(tmp["left"])
-        y1 = min(tmp["top"])
-        x2 = max(tmp["left"] + tmp["width"])
-        y2 = max(tmp["top"] + tmp["height"])
-        coords = pil_2_rel([x1, y1, x2, y2], w["page_width"], w["page_height"])
-        text = " ".join(tmp["text"])
-        text_blocks.append(
-            {"value": text, "page": w["page"], "coords": coords}
-        )
-    return text_blocks
+    for df in get_ocr_data(path):
+        groups = df.groupby(by="block_num").groups
+        # print(groups.groups)
+        keys = sorted(list(groups.keys()))
+        text_blocks = []
+        for k in keys:
+            word_idxs = groups[k]
+            tmp = df.iloc[word_idxs]
+            w = tmp.to_dict("records")[0]
+            x1 = min(tmp["left"])
+            y1 = min(tmp["top"])
+            x2 = max(tmp["left"] + tmp["width"])
+            y2 = max(tmp["top"] + tmp["height"])
+            coords = pil_2_rel([x1, y1, x2, y2], w["page_width"], w["page_height"])
+            text = " ".join(tmp["text"])
+            text_blocks.append(
+                {"value": text, "page": w["page"], "coords": coords}
+            )
+        yield text_blocks
+        

@@ -1,5 +1,6 @@
 from collections import defaultdict
 from random import shuffle
+from pathlib import Path
 
 import matplotlib.colors as mcolors
 import pandas as pd
@@ -468,18 +469,21 @@ class AutoTools(MyTab):
     def extract_text(self, btn=None):
         if isinstance(btn, Button):
             btn.disabled = True
-        for tb in get_text_blocks(self.node._path):
-            self.node.add_node(
-                MyNode(
-                    data={
-                        "type": "text",
-                        "path": self.node._path,
-                        "children": {},
-                        "content": [tb],
-                    },
-                    parent=self.node._id,
+        for page in get_text_blocks(self.node._path):
+            # with open(str(self.node._path) + "_output.txt", "a") as f:
+            #     f.write("\n".join([" ".join(x["value"].split()) for x in page]))
+            for tb in page:
+                self.node.add_node(
+                    MyNode(
+                        data={
+                            "type": "text",
+                            "path": self.node._path,
+                            "children": {},
+                            "content": [tb],
+                        },
+                        parent=self.node._id,
+                    )
                 )
-            )
 
         if isinstance(btn, Button):
             btn.disabled = False
@@ -607,7 +611,7 @@ class AutoTools(MyTab):
                         parent=self.node._id,
                     )
                     last_section.add_node(table_node)
-                    TableTools(table_node).parse_table()
+                    # TableTools(table_node).parse_table() # Temporarily disabled due to conda-forge issues
         if isinstance(btn, Button):
             btn.disabled = False
 
@@ -671,12 +675,12 @@ class TableTools(MyTab):
 
         self.parse_table_btn = Button(
             description="Parse Table (Enclosed Cells)",
-            tooltip=(
-                "Construct a dataframe from the image. This option works "
-                + "well on tables with borders around each cell"
+            tooltip=("Temporarily disabled due to conda-forge issues"
+                # "Construct a dataframe from the image. This option works "
+                # + "well on tables with borders around each cell"
             ),
         )
-        self.parse_table_btn.on_click(self.parse_table)
+        # self.parse_table_btn.on_click(self.parse_table)
         self.children = [self.parse_table_btn, self.delete_btn]
 
     def set_node(self, node):

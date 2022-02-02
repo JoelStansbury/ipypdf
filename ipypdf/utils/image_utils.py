@@ -91,5 +91,5 @@ class ImageContainer:
             return self.imgs[i]
         # manual page indexing starts at 1
         return convert_from_path(
-            self.fname, first_page=i + 1, last_page=i + 1, dpi=300
+            str(self.fname), first_page=i + 1, last_page=i + 1, dpi=300
         )[0]
