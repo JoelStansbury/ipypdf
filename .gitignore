@@ -9,3 +9,4 @@ build/*
 pdfs
 .coverage
 junit.xml
+dist

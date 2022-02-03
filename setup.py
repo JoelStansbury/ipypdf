@@ -1,6 +1,8 @@
 from setuptools import setup
 
-import versioneer
+from pathlib import Path
+HERE = Path(__file__).parent
+long_description = (HERE / "README.md").read_text()
 
 requirements = [
     "pytesseract",
@@ -23,9 +25,10 @@ requirements = [
 
 setup(
     name='ipypdf',
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    version="0.0.3",
     description="Jupyter widget for applying nlp to pdf documents",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     license="MIT",
     author="Joel Stansbury",
     author_email='stansbury.joel@gmail.com',

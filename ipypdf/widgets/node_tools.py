@@ -32,7 +32,10 @@ from ..utils.tess_utils import get_text_blocks
 from .dataframe_widget import DataFrame
 from .doc_tree import NODE_REGISTER, MyNode
 
-nlp = spacy.load("en_core_web_lg")
+try:
+    nlp = spacy.load("en_core_web_lg")
+except OSError:
+    print("Warning: en_core_web_lg is not installed. Get it with `python -m spacy download en_core_web_lg`")
 
 NODE_KWARGS = {
     "folder": [0, 5],
