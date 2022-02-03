@@ -1,2 +1,4 @@
-include versioneer.py
-include ipypdf/_version.py
+include test/*.py
+include ipypdf/*.py
+global-exclude __pycache__
+global-exclude *.py[co]

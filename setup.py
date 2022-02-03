@@ -15,8 +15,6 @@ requirements = [
     "ipytree",
     "traitlets",
     "pdf2image",
-    "layoutparser",
-    "layoutparser[paddledetection]",
     "opencv-python",
     "numpy",
     "pandas",
@@ -25,7 +23,7 @@ requirements = [
 
 setup(
     name='ipypdf',
-    version="0.0.1",
+    version="0.0.3",
     description="Jupyter widget for applying nlp to pdf documents",
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -33,14 +31,22 @@ setup(
     author="Joel Stansbury",
     author_email='stansbury.joel@gmail.com',
     url='https://github.com/JoelStansbury/ipypdf',
-    packages=['ipypdf'],
-    package_data = {'ipypdf': [
-        'utils/*',
-        'widgets/*',
-        'style/*'
-    ]},
+    packages=['ipypdf','tests'],
+    package_data = {
+        'ipypdf': [
+            'utils/*',
+            'widgets/*',
+            'style/*'
+        ],
+        'tests': [
+            '.py',
+            'fixture_data/*.pdf',
+            'fixture_data/*.json',
+        ]
+    },
     install_requires=requirements,
     keywords='ipypdf',
+    include_package_data=True,
     classifiers=[
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

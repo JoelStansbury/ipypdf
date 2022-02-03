@@ -11,7 +11,10 @@ python -m spacy download en_core_web_lg
 ```
 
 ### Conda
-> Coming soon
+```bash
+conda install -c conda-forge ipypdf
+conda install -c conda-forge spacy-model-en_core_web_lg
+```
 
 ### Development
 see `DEVELOPMENT.md`
