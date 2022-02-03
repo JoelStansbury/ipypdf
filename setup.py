@@ -25,7 +25,7 @@ requirements = [
 
 setup(
     name='ipypdf',
-    version="0.0.3",
+    version="0.0.1",
     description="Jupyter widget for applying nlp to pdf documents",
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -42,8 +42,8 @@ setup(
     install_requires=requirements,
     keywords='ipypdf',
     classifiers=[
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ]
 )
