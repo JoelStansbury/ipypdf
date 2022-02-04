@@ -21,7 +21,7 @@ from .widgets.node_tools import NodeDetail
 class App(ipyw.HBox):
     def __init__(self, indir, bulk_render=False):
         super().__init__()
-        self.add_class("eris-main-app")
+        self.add_class("ipypdf-main-app")
 
         self.bulk_render = bulk_render
         self.fname = ""
@@ -54,7 +54,7 @@ class App(ipyw.HBox):
         }
 
         tree_box = ipyw.VBox([self.tree_visualizer])
-        tree_box.add_class("eris-doc-tree-outter")
+        tree_box.add_class("ipypdf-doc-tree-outter")
 
         self.children = [
             tree_box,

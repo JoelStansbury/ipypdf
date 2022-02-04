@@ -19,6 +19,13 @@ from ipywidgets import (
 from traitlets import List, link, observe
 from ipycytoscape import CytoscapeWidget
 
+from .helper_widgets import (
+    RedText,
+    ActionRequired,
+    ScriptAction,
+    CodeBlock,
+    SmallButton,
+)
 from ..utils.image_utils import (
     ImageContainer,
     cv2_2_rel,
@@ -31,11 +38,6 @@ from ..utils.table_extraction import cells_2_table, img_2_cells
 from ..utils.tess_utils import get_text_blocks
 from .dataframe_widget import DataFrame
 from .doc_tree import NODE_REGISTER, MyNode
-
-try:
-    nlp = spacy.load("en_core_web_lg")
-except OSError:
-    print("Warning: en_core_web_lg is not installed. Get it with `python -m spacy download en_core_web_lg`")
 
 NODE_KWARGS = {
     "folder": [0, 5],
@@ -96,13 +98,7 @@ class MyTab(HBox):
         super().__init__()
         # TODO: when I made this init I thought this would only be run once,
         # that is not the case. Refactor this to only run once.
-        self.delete_btn = Button(
-            icon="trash",
-            tooltip="Delete this node and all of its children",
-        )
-        self.delete_btn.style.text_color = "red"
-        self.delete_btn.add_class("eris-small-btn-red")
-        self.delete_btn.on_click(self.delete_node)
+        self.delete_btn = SmallButton("trash", "Delete this node and all of its children", self.delete_node,"ipypdf-red")
 
     def add_node(self, btn):
         new_node = MyNode(
@@ -133,33 +129,10 @@ class SubsectionTools(MyTab):
         super().__init__()
         self.node = node
 
-        self.text = Button(
-            icon="align-left",
-            tooltip="Add a new text node",
-        )
-        self.text.on_click(self.add_node)
-        self.text.add_class("eris-small-btn")
-
-        section = Button(
-            icon="indent",
-            tooltip="Add a subsection",
-        )
-        section.on_click(self.add_node)
-        section.add_class("eris-small-btn")
-
-        image = Button(
-            icon="image",
-            tooltip="Add an image",
-        )
-        image.on_click(self.add_node)
-        image.add_class("eris-small-btn")
-
-        table = Button(
-            icon="table",
-            tooltip="Add a Table",
-        )
-        table.on_click(self.add_node)
-        table.add_class("eris-small-btn")
+        self.text = SmallButton("align-left", "Add a new text node", self.add_node)
+        section = SmallButton("indent", "Add a subsection", self.add_node)
+        image = SmallButton("image", "Add an image", self.add_node)
+        table = SmallButton("table", "Add a Table", self.add_node)
 
         self._types = {
             self.text: "text",
@@ -176,12 +149,7 @@ class ImageTools(MyTab):
         super().__init__()
         self.node = node
 
-        text = Button(
-            icon="align-left",
-            tooltip="Add a description for the image",
-        )
-        text.on_click(self.add_node)
-        text.add_class("eris-small-btn")
+        text = SmallButton("align-left", "Add a description for the image", self.add_node)
 
         self._types = {
             text: "text",
@@ -215,21 +183,25 @@ class TextBlockTools(MyTab):
 class SpacyInsights(MyTab):
     def __init__(self, node):
         super().__init__()
+        self._init()
 
-        self.refresh_btn = Button(icon="refresh")
-        self.refresh_btn.add_class("eris-small-btn")
-        self.refresh_btn.on_click(self.refresh)
-
-        self.utils = HBox([self.refresh_btn])
-        if nlp is None:
-            self.utils = HTML(
-                "Spacy model not found. Do 'pip install spacy && python -m "
-                + "spacy download en_core_web_lg'"
-            )
-        self.children = [self.utils]
+    def _init(self,_=None):
+        try:
+            self.nlp = spacy.load("en_core_web_lg")
+            self.refresh_btn = SmallButton("refresh","Refresh Tables",self.refresh)
+            self.utils = HBox([self.refresh_btn])
+            self.children = [self.utils]
+        except OSError:
+            self.children = [
+                ScriptAction(
+                    message="Spacy en_core_web_lg is required to use this toolkit",
+                    args=["spacy","download","en_core_web_lg"],
+                    callback=self._init
+                )
+            ]
 
     def refresh(self, _=None):
-        doc = nlp(self.node.stringify())
+        doc = self.nlp(self.node.stringify())
         ents = defaultdict(int)
         for ent in doc.ents:
             ents[(ent.text, ent.label_)] += 1
@@ -260,9 +232,8 @@ class Cytoscape(MyTab):
     def __init__(self, node):
         super().__init__()
         self.node = node
-        self.refresh_btn = Button(icon="refresh", tooltip="Recompute network")
-        self.refresh_btn.add_class("eris-small-btn")
-        self.refresh_btn.on_click(self.refresh)
+        self.refresh_btn = SmallButton("refresh", "Recompute network", self.refresh
+        )
         self.slider = FloatSlider(0.4, min=0, max=1)
         self.config_btn_recursive = Checkbox(True, description="Recursive")
         self.confib_btn_intradoc = Checkbox(
@@ -614,11 +585,11 @@ class AutoTools(MyTab):
                         parent=self.node._id,
                     )
                     last_section.add_node(table_node)
-                    # TableTools(table_node).parse_table() # Temporarily disabled due to conda-forge issues
+                    TableTools(table_node).parse_table() # Temporarily disabled due to conda-forge issues
         if isinstance(btn, Button):
             btn.disabled = False
 
-    def init_layoutparser(self):
+    def init_layoutparser(self,_=None):
         try:
             import layoutparser as lp
 
@@ -633,42 +604,14 @@ class AutoTools(MyTab):
                 self.layoutparser_btn,
             ]
         except ImportError:
-            self.layoutparser_btn.description = "Install"
-            self.layoutparser_btn.on_click(self.install_layoutparser)
             self.layout_extraction.children = [
                 self.lp_desc,
-                HTML(
-                    value='<p style="color:red;"> layoutparser is not installed</p>'
-                ),
-                self.layoutparser_btn,
-            ]
-
-    def install_layoutparser(self, btn=None):
-        if isinstance(btn, Button):
-            btn.disabled = True
-        import subprocess
-        import sys
-
-        try:
-            subprocess.check_call(
-                [sys.executable, "-m", "pip", "install", "layoutparser"]
-            )
-            subprocess.check_call(
-                [
-                    sys.executable,
-                    "-m",
-                    "pip",
-                    "install",
-                    "layoutparser[paddledetection]",
-                ]
-            )
-            self.init_layoutparser()
-        except subprocess.CalledProcessError:
-            if isinstance(btn, Button):
-                btn.description = (
-                    "Installation Failed (see terminal output for more info)"
+                ScriptAction(
+                    message="LayoutParser is not installed",
+                    args=["pip","install","layoutparser", "layoutparser[paddledetection]"],
+                    callback=self.init_layoutparser
                 )
-                btn.on_click(self.install_layoutparser, remove=True)
+            ]
 
 
 class TableTools(MyTab):
@@ -678,12 +621,12 @@ class TableTools(MyTab):
 
         self.parse_table_btn = Button(
             description="Parse Table (Enclosed Cells)",
-            tooltip=("Temporarily disabled due to conda-forge issues"
-                # "Construct a dataframe from the image. This option works "
-                # + "well on tables with borders around each cell"
+            tooltip=(
+                "Construct a dataframe from the image. This option works "
+                + "well on tables with borders around each cell"
             ),
         )
-        # self.parse_table_btn.on_click(self.parse_table)
+        self.parse_table_btn.on_click(self.parse_table)
         self.children = [self.parse_table_btn, self.delete_btn]
 
     def set_node(self, node):

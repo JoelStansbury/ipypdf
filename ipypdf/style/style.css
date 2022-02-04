@@ -1,18 +1,18 @@
-.eris-main-app {
+.ipypdf-main-app {
 	/* border: 1px solid #00ff55; */
 	height: 1000px;
 }
-.eris-pdf-canvas {
+.ipypdf-pdf-canvas {
 	border: 1px solid #000000;
 }
-.eris-doc-tree {
+.ipypdf-doc-tree {
 	direction: ltr;
 	overflow: visible;
 	padding: 5px;
 	width: 90%;
 	height: 90%;
 }
-.eris-doc-tree-outter {
+.ipypdf-doc-tree-outter {
 	/* border: 1px solid #ff0000; */
 	width: 300px;
 	height: 100%;
@@ -20,15 +20,21 @@
 	direction: rtl;
 	align-items: center;
 }
-.eris-node-control-box {
-	
+.ipypdf-node-control-box {
 	border: 1px solid #000000;
 }
-.eris-small-btn {
+.ipypdf-small-btn {
 	width: 40px;
 }
-.eris-small-btn-red {
-	width: 40px;
-	color: darkred;
-	background-color: white;
+.ipypdf-red {
+	color:darkred;
+}
+.ipypdf-code-block {
+    font-family: Monaco, monospace;
+    font-size: $base-font-size;
+    line-height: 100%;
+    background-color: #eee;
+    padding: 0.2em;
+    letter-spacing: -0.05em;
+    word-break: normal;
 }

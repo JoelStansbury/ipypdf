@@ -83,7 +83,7 @@ def set_node_type(cursor, c_path):
 class TreeWidget(Tree):
     def __init__(self, directory: str):
         super().__init__(multiple_selection=False)
-        self.add_class("eris-doc-tree")
+        self.add_class("ipypdf-doc-tree")
         self.root = node_factory(directory)
         self.add_node(self.root)
         self.root.collapse_to(2)

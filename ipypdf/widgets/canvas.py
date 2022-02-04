@@ -13,7 +13,7 @@ CANVAS_TYPE_KWARGS = {
 class PdfCanvas(MultiCanvas):
     def __init__(self, **kwargs):
         super().__init__(3, **kwargs)
-        self.add_class("eris-pdf-canvas")
+        self.add_class("ipypdf-pdf-canvas")
 
         self.bboxes = []
 
@@ -50,7 +50,7 @@ class PdfCanvas(MultiCanvas):
     def draw_rect(self):
         self.animated_layer.clear_rect(0, 0, self.width, self.height)
         self.animated_layer.stroke_rect(*self.xywh())
-        self.add_class("eris-pdf-canvas")
+        self.add_class("ipypdf-pdf-canvas")
 
     def clear(self):
         self.fixed_layer.clear_rect(0, 0, self.width, self.height)

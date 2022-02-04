@@ -1,3 +1,4 @@
+from platform import python_version
 from setuptools import setup
 
 from pathlib import Path
@@ -7,23 +8,24 @@ long_description = (HERE / "README.md").read_text()
 requirements = [
     "pytesseract",
     "spacy",
-    "jupyterlab",
+    "jupyterlab>=3",
     "ipycanvas",
     "ipycytoscape",
     "ipyevents",
     "ipywidgets",
     "ipytree",
     "traitlets",
+    "numpy <=1.19.3,>=1.13"
     "pdf2image",
     "opencv-python",
-    "numpy",
     "pandas",
     "matplotlib",
 ]
 
 setup(
     name='ipypdf',
-    version="0.0.3",
+    version="0.0.6",
+    python_version = "<=3.8.12,>=3.6",
     description="Jupyter widget for applying nlp to pdf documents",
     long_description=long_description,
     long_description_content_type='text/markdown',
