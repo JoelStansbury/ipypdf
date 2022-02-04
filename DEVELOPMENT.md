@@ -20,6 +20,14 @@ a more static manner.
 * Build the conda package<br>
     `conda build ipypdf -c conda-forge --output-folder="build/"`
 
+* PyPi packaging
+    ```bash
+    python3 -m pip install --upgrade build
+    python3 -m pip install --upgrade twine
+    python3 -m build
+    python3 -m twine upload --repository pypi dist/*
+    ```
+    
 * Test
     `pytest --cov=ipypdf tests/`
 
