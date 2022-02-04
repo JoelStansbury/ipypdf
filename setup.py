@@ -17,9 +17,9 @@ requirements = [
     "traitlets",
     "numpy <=1.19.3,>=1.13",
     "pdf2image",
-    "opencv-python",
-    "pandas",
-    "matplotlib",
+    "opencv-python", # maybe redundant
+    "pandas", # maybe redundant
+    "matplotlib", # maybe redundant
 ]
 
 setup(

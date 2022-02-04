@@ -2,24 +2,44 @@
 A Jupyter-based tool to help parse out structured text from a PDF document and explore the contents.
 
 ## Installation
+It is highly recommended that you install this into a clean environment.
 
+#### Conda (recommended)
+```bash
+conda create -n ipypdf python=3.8 pip
+conda activate ipypdf
+```
+#### Pip (you may have problems with python>3.8)
+```bash
+python3 -m venv envs/ipypdf
+cd envs/ipypdf/Scripts
+activate.bat
+```
 ### Pip
-Install Tesseract
+1. Install [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
+    * If you have conda `conda install tesseract -c conda-forge`
+2. Install ipypdf
+    * This will grab all requirements
 ```bash
 pip install ipypdf
 python -m spacy download en_core_web_lg
 ```
+> Note: `layoutparser` puts an upper bound on `numpy` (1.19.3), so if you want
+to use the `Parse Layout` button, it's best to install this in an empty environment.
 
 ### Conda
-```bash
-conda install -c conda-forge ipypdf
-conda install -c conda-forge spacy-model-en_core_web_lg
-```
+> I ran into some problems due to `paddlepaddle`, so progress towards a conda-forge build
+is suspended until further notice. I will likely make a fork without layoutparser
+for the conda build.
 
 ### Development
 see `DEVELOPMENT.md`
 
 ## Usage
+ipypdf is build for jupyter lab but should also work in jupyter notebooks.
+`jupyterlab>=3` is a requirement, so it should be included during the installation.
+
+1. Launch jupyter lab with `jupyter lab`
 ```python
 from ipypdf import App
 app = App("path/to/your/pdfs", bulk_render=False)
