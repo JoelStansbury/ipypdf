@@ -15,7 +15,7 @@ requirements = [
     "ipywidgets",
     "ipytree",
     "traitlets",
-    "numpy <=1.19.3,>=1.13"
+    "numpy <=1.19.3,>=1.13",
     "pdf2image",
     "opencv-python",
     "pandas",
