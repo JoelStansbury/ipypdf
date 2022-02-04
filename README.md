@@ -1,39 +1,41 @@
 # PDF Digitizer (_It has a back button!!_)
 A Jupyter-based tool to help parse out structured text from a PDF document and explore the contents.
 
+## Requirements
+* python 3.8
+* [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
+
 ## Installation
 It is highly recommended that you install this into a clean environment.
 
+> Note: `layoutparser` puts an upper bound on `numpy` (1.19.3), so if you want
+to use the `Parse Layout` button, it's best to install this in an empty environment.
+
 #### Conda (recommended)
 ```bash
-conda create -n ipypdf python=3.8 pip
+conda create -n ipypdf python pip jupyterlab tesseract -c conda-forge
 conda activate ipypdf
+pip install -e ipypdf
 ```
-#### Pip (you may have problems with python>3.8)
+#### No Conda (not tested)
+
+Install [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
+
 ```bash
 python3 -m venv envs/ipypdf
 cd envs/ipypdf/Scripts
 activate.bat
+pip install -e ipypdf
 ```
-### Pip
-1. Install [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
-    * If you have conda `conda install tesseract -c conda-forge`
-2. Install ipypdf
-    * This will grab all requirements
-```bash
-pip install ipypdf
-python -m spacy download en_core_web_lg
-```
-> Note: `layoutparser` puts an upper bound on `numpy` (1.19.3), so if you want
-to use the `Parse Layout` button, it's best to install this in an empty environment.
-
-### Conda
-> I ran into some problems due to `paddlepaddle`, so progress towards a conda-forge build
-is suspended until further notice. I will likely make a fork without layoutparser
-for the conda build.
+> You may need to install Visual Studio C++ 14 for numpy
 
 ### Development
 see `DEVELOPMENT.md`
+
+### Common Issues
+* AutoTools widget keeps saying layoutparser is not installed
+    * This is usually a problem with pywin32.
+    * Try `conda install pywin32`
 
 ## Usage
 ipypdf is build for jupyter lab but should also work in jupyter notebooks.
