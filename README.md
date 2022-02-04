@@ -2,7 +2,6 @@
 A Jupyter-based tool to help parse out structured text from a PDF document and explore the contents.
 
 ## Requirements
-* python 3.8
 * [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
 
 ## Installation

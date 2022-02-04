@@ -22,12 +22,12 @@ a more static manner.
 
 * PyPi packaging
     ```bash
-    python3 -m pip install --upgrade build
-    python3 -m pip install --upgrade twine
-    python3 -m build
-    python3 -m twine upload --repository pypi dist/*
+    python -m pip install --upgrade build
+    python -m pip install --upgrade twine
+    python -m build
+    python -m twine upload --repository pypi dist/*
     ```
-    
+
 * Test
     `pytest --cov=ipypdf tests/`
 
