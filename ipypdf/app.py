@@ -33,7 +33,8 @@ class App(ipyw.HBox):
         self.navigator = NavigationToolbar()
         self.canvas = PdfCanvas(height=1000)
         self.tree_visualizer = TreeWidget(indir)
-        self.node_detail = NodeDetail(self.tree_visualizer.root)
+        self.root = self.tree_visualizer.root
+        self.node_detail = NodeDetail(self.root)
 
         self.tree_visualizer.observe(
             self.on_selection_change, "selected_nodes"
@@ -180,7 +181,6 @@ class App(ipyw.HBox):
         self.active_node.add_content(item)
 
     def save(self, _=None):
-        for path, data in self.tree_visualizer.root.to_dict().items():
-            if data:
-                with path.with_suffix(".json").open(mode="w") as f:
-                    json.dump(data, f)
+        for path, data in self.root.to_dict().items():
+            with path.with_suffix(".json").open(mode="w") as f:
+                json.dump(data, f)

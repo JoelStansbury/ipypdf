@@ -1,6 +1,7 @@
 from collections import defaultdict
 from random import shuffle
 from pathlib import Path
+import json
 
 import matplotlib.colors as mcolors
 import pandas as pd
@@ -25,6 +26,7 @@ from .helper_widgets import (
     ScriptAction,
     CodeBlock,
     SmallButton,
+    Warnings,
 )
 from ..utils.image_utils import (
     ImageContainer,
@@ -34,8 +36,9 @@ from ..utils.image_utils import (
     rel_2_pil,
 )
 from ..utils.nlp import tfidf_similarity
-from ..utils.table_extraction import cells_2_table, img_2_cells
+from ..utils.table_extraction import img_2_table
 from ..utils.tess_utils import get_text_blocks
+from ..utils.lp_util import parse_layout
 from .dataframe_widget import DataFrame
 from .doc_tree import NODE_REGISTER, MyNode
 
@@ -48,6 +51,21 @@ NODE_KWARGS = {
     "table": [7],
 }
 
+LP_DESC = ('Layout Extraction will use <a href="htt'
+    + 'ps://github.com/Layout-Parser/layout-parser" '
+    + 'style="color:blue;">layoutparser</a> to find'
+    + " and label images, tables, titles, and normal text within"
+    + " the document. Then, the coordinates of each node are used"
+    + ' to predict the "natural order" with which the nodes'
+    + " would be read.")
+
+TESS_DESC = ('Text Extraction uses <a href="'
+    + 'https://github.com/tesseract-ocr/tesseract" '
+    + 'style="color:blue;">tesseract</a> to find'
+    + " and label textblocks within the document. The order is typically"
+    + " more accurate than that of LayoutExtraction. It also tends to "
+    + "handle slide shows better than layoutparser as it was trained "
+    + "on a much more diverse dataset.")
 
 class NodeDetail(Tab):
     def __init__(self, node):
@@ -397,6 +415,29 @@ class AutoTools(MyTab):
     def __init__(self, node):
         super().__init__()
         self.node = node
+        self.info = Warnings()
+
+        # ---------------------- Options ----------------------
+        self.to_txt = Checkbox(description="Export directly to txt file (needed for large docs)", value=False)
+        def warn(e):
+            m = f"Warning: output is being piped to {''.join(str(self.node._path).split('.')[:-1])}_output.json"
+            if e["new"]:
+                self.info.add(m,1)
+                # self.layoutparser_btn.disabled = True
+                # self.layoutparser_btn.tooltip = "Layout direct to text is not yet supported"
+            else:
+                self.info.remove(m)
+                # self.layoutparser_btn.disabled = False
+                # self.layoutparser_btn.tooltip = "Send each page through the LayoutParser pipeline"
+            
+
+        self.to_txt.observe(
+            warn,
+            names="value"
+        )
+        
+        self.settings = VBox([self.to_txt])
+        
 
         # --------------------- Tesseract ---------------------
         self.tesseract_btn = Button(
@@ -405,37 +446,34 @@ class AutoTools(MyTab):
         )
         self.tesseract_btn.on_click(self.extract_text)
         self.te_desc = HTML(
-            value='Text Extraction uses <a href="'
-            + 'https://github.com/tesseract-ocr/tesseract" '
-            + 'style="color:blue;">tesseract</a> to find'
-            + " and label textblocks within the document. The order is typically"
-            + " more accurate than that of LayoutExtraction. It also tends to "
-            + "handle slide shows better than layoutparser as it was trained "
-            + "on a much more diverse dataset.",
+            value=TESS_DESC,
             layout={"width": "400px"},
         )
         self.text_extraction = VBox()
         self.text_extraction.children = [self.te_desc, self.tesseract_btn]
 
+
         # --------------------- LayoutParser ---------------------
         self.layout_extraction = VBox()
-        self.layoutparser_btn = Button()
-        # button description and tooltip generated in self.init_layoutparser
+        self.layoutparser_btn = Button(
+            description = "Parse Layout",
+            tooltip = "Send each page through the LayoutParser pipeline"
+        )
+        self.layoutparser_btn.on_click(self.extract_layout)
+
         self.lp_desc = HTML(
-            value='Layout Extraction will use <a href="htt'
-            + 'ps://github.com/Layout-Parser/layout-parser" '
-            + 'style="color:blue;">layoutparser</a> to find'
-            + " and label images, tables, titles, and normal text within"
-            + " the document. Then, the coordinates of each node are used"
-            + ' to predict the "natural order" with which the nodes'
-            + " would be read.",
+            value=LP_DESC,
             layout={"width": "400px"},
         )
-        self.layout_extraction.children = [self.lp_desc, self.layoutparser_btn]
-        self.init_layoutparser()
+        self.init_layoutparser()  # sets children according to layoutparser status
 
         self.options = VBox(
-            children=[self.text_extraction, self.layout_extraction]
+            children=[
+                self.settings,
+                self.info,
+                self.text_extraction,
+                self.layout_extraction,
+            ]
         )
 
         self.children = [self.options]
@@ -443,21 +481,47 @@ class AutoTools(MyTab):
     def extract_text(self, btn=None):
         if isinstance(btn, Button):
             btn.disabled = True
-        for page in get_text_blocks(self.node._path):
-            # with open(str(self.node._path) + "_output.txt", "a") as f:
-            #     f.write("\n".join([" ".join(x["value"].split()) for x in page]))
+        text_node = MyNode(
+            data={
+                "type": "text",
+                "path": self.node._path,
+                "children": {},
+                "content": [],
+            },
+            parent="" if self.to_text.value else self.node._id,
+        )
+        path = self.node._path
+        pages = ImageContainer(path, bulk_render=False).info["Pages"]
+        i=0
+        
+        if not self.to_txt.value:
+            self.node.add_node(text_node)
+
+        m = f""
+        self.info.add(m)
+        for page in get_text_blocks(path):
+            i+=1
+            self.info.remove(m)
+            m = f"Extracting Text: Page {i}/{pages}"
+            self.info.add(m)
+
             for tb in page:
-                self.node.add_node(
-                    MyNode(
-                        data={
-                            "type": "text",
-                            "path": self.node._path,
-                            "children": {},
-                            "content": [tb],
-                        },
-                        parent=self.node._id,
-                    )
-                )
+                tb["value"] = tb["value"].strip()
+                tb["coords"] = tb.pop("rel_coords")
+                tb.pop("pil_coords")
+                if tb["value"]:
+                    text_node.content.append(tb)
+        self.info.remove(m)
+
+        if self.to_txt.value:
+            fname = f"{'.'.join(str(self.node._path).split('.')[:-1])}_output.json"
+            m = f"Writing to: {fname}"
+            self.info.add(m)
+            with open(fname, "w") as f:
+                json.dump(text_node.to_dict(), f)
+            text_node.delete()
+            self.info.remove(m)
+
 
         if isinstance(btn, Button):
             btn.disabled = False
@@ -467,79 +531,54 @@ class AutoTools(MyTab):
             btn.disabled = True
         self.layoutparser_btn.disabled = True
         path = self.node._path
-        imgs = ImageContainer(path, bulk_render=False)
 
-        last_section = self.node
-        for page_num, img in enumerate(imgs):
-            layout = list(self.lp_model.detect(img))
 
-            # TODO: Swap this out with a system that includes tesseract.
-            #   Tess seems to be able to detect page-breaks pretty reliably
-            x_min = img.width
-            x_max = 0
-            for block in layout:
-                mn = block.coordinates[0]
-                mx = block.coordinates[2]
-                x_min = mn if mn < x_min else x_min
-                x_max = mx if mx > x_max else x_max
-            page_width = x_max - x_min
+        # if piping straight to file, then make a detatched node so we don't
+        # waste time rendering widgets
+        # NOTE: maybe this doesn't work
+        root = MyNode(data={"type":"pdf","children":{}}) if self.to_txt.value else self.node
+        last_section = root
 
-            def column(pil_coords):
-                # NOTE: This places an upper-bound on columns
-                x1, _, x2, _ = pil_coords
+        i=0
+        total = ImageContainer(path, bulk_render=False).info['Pages']
+        m = f"Parsing Layout: {i+1}/{total}"
+        self.info.add(m)
 
-                if abs(x1 - x_min) < (page_width / 20):
-                    return 0
-
-                # if it is centered then column = 0
-                w = x2 - x1
-                mid = x1 + (w / 2)
-                page_mid = x_min + (page_width / 2)
-                if abs(page_mid - mid) < (page_width / 50):
-                    return 0
-
-                # max possible number of columns
-                # c_num = int(page_width//w)
-
-                return (x1 - x_min) // (page_width / 10)
-
-            layout.sort(
-                key=lambda x: (column(x.coordinates), x.coordinates[1])
-            )
-            # layout.sort(key=lambda x: column(x.coordinates))
-            #
+        for layout in parse_layout(path, self.lp_model):
 
             for block in layout:
-                x1, y1, x2, y2 = [int(x) for x in block.coordinates]
-                coords = (x1, y1, x2 + 20, y2 + 5)
-                text = tess.image_to_string(img.crop(coords)).strip()
-                rel_coords = pil_2_rel(coords, img.width, img.height)
-                content = [
-                    {"value": text, "page": page_num, "coords": rel_coords}
-                ]
+
                 if block.type == "Title":
                     last_section = MyNode(
-                        label=text,
+                        label=block.text,
                         data={
                             "type": "section",
-                            "path": self.node._path,
-                            "children": {},
-                            "content": content,
-                            "label": text,
+                            "content": [
+                                {
+                                    "value": block.text, 
+                                    "page": i, 
+                                    "coords": block.relative_coordinates
+                                }
+                            ],
+                            "label": block.text,
                         },
-                        parent=self.node._id,
+                        parent=root._id,
                     )
-                    self.node.add_node(last_section)
+                    root.add_node(last_section)
                 elif block.type in ["List", "Text"]:
                     last_section.add_node(
                         MyNode(
                             data={
                                 "type": "text",
-                                "path": self.node._path,
-                                "children": {},
-                                "content": content,
+                                "content": [
+                                    {
+                                        "value": block.text, 
+                                        "page": i, 
+                                        "coords": block.relative_coordinates
+                                    }
+                                ],
                             },
-                            parent=self.node._id,
+                            parent=last_section._id,
                         )
                     )
                 elif block.type == "Figure":
@@ -547,45 +586,48 @@ class AutoTools(MyTab):
                         MyNode(
                             data={
                                 "type": "image",
-                                "path": self.node._path,
-                                "children": {},
                                 "content": [
                                     {
                                         "value": None,
-                                        "page": page_num,
-                                        "coords": pil_2_rel(
-                                            block.coordinates,
-                                            img.width,
-                                            img.height,
-                                        ),
+                                        "page": i,
+                                        "coords": block.relative_coordinates,
                                     }
                                 ],
                             },
-                            parent=self.node._id,
+                            parent=last_section._id,
                         )
                     )
                 elif block.type == "Table":
                     table_node = MyNode(
                         data={
                             "type": "table",
-                            "path": self.node._path,
-                            "children": {},
                             "content": [
                                 {
                                     "value": None,
-                                    "page": page_num,
-                                    "coords": pil_2_rel(
-                                        block.coordinates,
-                                        img.width,
-                                        img.height,
-                                    ),
+                                    "page": i,
+                                    "coords": block.relative_coordinates,
                                 }
                             ],
                         },
-                        parent=self.node._id,
+                        parent=last_section._id,
                     )
                     last_section.add_node(table_node)
-                    TableTools(table_node).parse_table() # Temporarily disabled due to conda-forge issues
+                    TableTools(table_node).parse_table()
+            
+            i+=1
+            self.info.remove(m)
+            m = f"Parsing Layout: {i+1}/{total}"
+            self.info.add(m)
+        self.info.remove(m)
+        if self.to_txt.value:
+            fname = f"{'.'.join(str(self.node._path).split('.')[:-1])}_output.json"
+            m = f"Writing to: {fname}"
+            self.info.add(m)
+            with open(fname, "w") as f:
+                json.dump(root.to_dict(), f)
+            root.delete()
+            self.info.remove(m)
+
         if isinstance(btn, Button):
             btn.disabled = False
 
@@ -597,8 +639,6 @@ class AutoTools(MyTab):
                 "lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config"
             )
 
-            self.layoutparser_btn.description = "Parse Layout"
-            self.layoutparser_btn.on_click(self.extract_layout)
             self.layout_extraction.children = [
                 self.lp_desc,
                 self.layoutparser_btn,
@@ -653,8 +693,7 @@ class TableTools(MyTab):
 
         cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
         table_coords = rel_2_cv2(coords, img.width, img.height)
-        items = img_2_cells(cropped_img)
-        rows = cells_2_table(items)
+        rows = img_2_table(cropped_img)
         for r in rows:
             for cell in r:
                 rel_coords = cv2_2_rel(

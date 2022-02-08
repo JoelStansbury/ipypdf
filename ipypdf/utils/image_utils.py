@@ -78,11 +78,12 @@ def rel_2_cv2(rel_coords, w, h):
 
 
 class ImageContainer:
-    def __init__(self, fname, bulk_render=True):
+    def __init__(self, fname, bulk_render=True, dpi=300):
         self.info = pdfinfo_from_path(str(fname))
         self.bulk_render = bulk_render
+        self.dpi = dpi
         if bulk_render:
-            self.imgs = convert_from_path(str(fname), dpi=300)
+            self.imgs = convert_from_path(str(fname), dpi=self.dpi)
         else:
             self.fname = str(fname)
 
@@ -91,5 +92,5 @@ class ImageContainer:
             return self.imgs[i]
         # manual page indexing starts at 1
         return convert_from_path(
-            str(self.fname), first_page=i + 1, last_page=i + 1, dpi=300
+            str(self.fname), first_page=i + 1, last_page=i + 1, dpi=self.dpi
         )[0]

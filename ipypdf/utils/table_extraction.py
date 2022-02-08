@@ -138,3 +138,8 @@ def cells_2_table(cells, h_thresh=20, w_thresh=20):
             r.pop(c)
 
     return rows
+
+
+def img_2_table(img):
+    cells = img_2_cells(img)
+    return cells_2_table(cells)

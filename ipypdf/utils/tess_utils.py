@@ -52,7 +52,12 @@ def get_text_blocks(path):
             coords = pil_2_rel([x1, y1, x2, y2], w["page_width"], w["page_height"])
             text = " ".join(tmp["text"])
             text_blocks.append(
-                {"value": text, "page": w["page"], "coords": coords}
+                {
+                    "value": text, 
+                    "page": w["page"], 
+                    "rel_coords": coords,
+                    "pil_coords": [x1, y1, x2, y2],
+                }
             )
         yield text_blocks
         

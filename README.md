@@ -3,6 +3,7 @@ A Jupyter-based tool to help parse out structured text from a PDF document and e
 
 ## Requirements
 * [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
+* `jupyterlab` (notebook also works)
 
 ## Installation
 It is highly recommended that you install this into a clean environment.
@@ -10,23 +11,23 @@ It is highly recommended that you install this into a clean environment.
 > Note: `layoutparser` puts an upper bound on `numpy` (1.19.3), so if you want
 to use the `Parse Layout` button, it's best to install this in an empty environment.
 
-#### Conda (recommended)
+### Conda (recommended)
 ```bash
 conda create -n ipypdf python pip jupyterlab tesseract -c conda-forge
 conda activate ipypdf
-pip install -e ipypdf
+python -m pip install ipypdf
 ```
-#### No Conda (not tested)
+### No Conda (not tested)
 
 Install [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
 
 ```bash
-python3 -m venv envs/ipypdf
+python -m venv envs/ipypdf
 cd envs/ipypdf/Scripts
 activate.bat
-pip install -e ipypdf
+python -m pip install jupyterlab 
+python -m pip install ipypdf
 ```
-> You may need to install Visual Studio C++ 14 for numpy
 
 ### Development
 see `DEVELOPMENT.md`
@@ -38,7 +39,6 @@ see `DEVELOPMENT.md`
 
 ## Usage
 ipypdf is build for jupyter lab but should also work in jupyter notebooks.
-`jupyterlab>=3` is a requirement, so it should be included during the installation.
 
 1. Launch jupyter lab with `jupyter lab`
 ```python

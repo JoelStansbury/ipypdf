@@ -94,12 +94,12 @@ class MyNode(Node):
     label = Unicode(default_value="").tag(sync=True)
 
     def __init__(
-        self,
-        label="",
-        path=None,
-        data=None,
-        parent=None,
-    ):
+            self,
+            label="",
+            path=None,
+            data=None,
+            parent=None,
+        ):
         super().__init__()
         self._type = data["type"]
         self.content = data.get("content", [])
@@ -117,33 +117,42 @@ class MyNode(Node):
         self.name = truncate(self.label) + page
         self.icon = NODE_KWARGS[self._type]["icon"]
 
-        if data is not None:
-            if isinstance(data["children"], dict):
-                for label, d in data["children"].items():
+        if data is not None and "children" in data:
+            children = data["children"]
+            if isinstance(children, dict):
+                for label, d in children.items():
                     self.add_node(
                         MyNode(
                             label=label,
                             path=self._path,
-                            data=d,
-                            parent=self._id,
+                            data=d
                         )
                     )
-            elif isinstance(data["children"], list):
-                for d in data["children"]:
+            elif isinstance(children, list):
+                for d in children:
                     self.add_node(
                         MyNode(
                             label=d["label"],
                             path=self._path,
-                            data=d,
-                            parent=self._id,
+                            data=d
                         )
                     )
+
+    def add_node(self, node):
+        node.parent = self._id
+        if self._path and not node._path:
+            node._path = self._path
+        super().add_node(node)
 
     def _delete(self, child):
         self.remove_node(child)
 
     def delete(self, _=None):
-        NODE_REGISTER[self.parent]._delete(self)
+        if self.parent:
+            NODE_REGISTER[self.parent]._delete(self)
+        for n in self.nodes:
+            n.delete()
+        NODE_REGISTER.pop(self._id)
 
     @observe("label")
     def set_name(self, _):
@@ -192,11 +201,16 @@ class MyNode(Node):
                 files.update(c.to_dict())
             return files
 
-    def dfs(self):
+    def dfs(self, label=None):
         """Iterate through all nodes (self included) using depth first search"""
-        yield self
-        for node in self.nodes:
-            yield from node.dfs()
+        if label is not None:
+            for node in self.dfs():
+                if node.label == label:
+                    yield node
+        else:
+            yield self
+            for node in self.nodes:
+                yield from node.dfs()
 
     def stringify(self):
         """

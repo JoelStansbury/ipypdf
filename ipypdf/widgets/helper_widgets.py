@@ -74,3 +74,24 @@ class ScriptAction(VBox):
             ActionRequired(message, actions, callback),
             CodeBlock(" ".join(cmd))
         ]
+
+class Warnings(VBox):
+    def __init__(self):
+        super().__init__()
+        self._warnings = []
+
+    def show(self):
+        self._warnings.sort(key=lambda x:x[1], reverse=True)
+        self.children = [RedText(m) if s else HTML(m) for m,s in self._warnings]
+
+    def add(self, message, severity=0):
+        self._warnings.append((message, severity))
+        self.show()
+    
+    def remove(self, message):
+        self._warnings = [x for x in self._warnings if x[0] != message]
+        self.show()
+    
+    def clear(self):
+        self._warnings = []
+        self.children = []
