@@ -21,6 +21,7 @@ def img_2_cells(img, approximate_cell_height=20, approximate_cell_width=150):
         bbox and text of detected cells. The elements are ordered first by
         column, then by row.
     """
+    words = image_2_words(img)
 
     img = np.array(img)
     img = cv2.rectangle(
@@ -45,10 +46,12 @@ def img_2_cells(img, approximate_cell_height=20, approximate_cell_width=150):
     for contour, hierarchy in zip(contours, hierarchy[0]):
         x, y, w, h = cv2.boundingRect(contour)
         if w > approximate_cell_width and h > approximate_cell_height:
-            text = tess.image_to_string(
-                pil.fromarray(img).crop((x, y, x + w, y + h)), config="--psm 1"
-            ).strip()
+            # text = tess.image_to_string(
+            #     pil.fromarray(img).crop((x, y, x + w, y + h)), 
+            #     config="--psm 12"
+            # ).strip()
             cv2_coords = x, y, w, h
+            text = find_words(cv2_coords, words)
             items.append((cv2_coords, text))
     items.sort(
         key=lambda x: (
@@ -63,6 +66,29 @@ def contains(coords, px, py):
     x, y, w, h = coords
     return x < px and x + w > px and y < py and y + h > py
 
+
+def image_2_words(img):
+    data = tess.image_to_data(img)
+    data = [x.split() for x in data.split("\n")][:-1]
+    data = [dict(zip(data[0], data[i])) for i in range(1,len(data))]
+    data = [x for x in data if "text" in x]
+    data = [
+        {
+            "text": x["text"],
+            "center": (int(x["left"])+int(x["width"])/2, int(x["top"])+int(x["height"])/2)
+        } for x in data
+    ]
+    return data
+
+
+def find_words(bbox, words):
+    s = ''
+    for d in words:
+        w = d["text"]
+        c = d["center"]
+        if contains(bbox, c[0],c[1]):
+            s += " " + w
+    return s
 
 def cells_2_table(cells, h_thresh=20, w_thresh=20):
     """
@@ -140,6 +166,11 @@ def cells_2_table(cells, h_thresh=20, w_thresh=20):
     return rows
 
 
-def img_2_table(img):
+def img_2_table(img, img_coords=None):
+    """
+    By default, the coordinates returned will be on the coordinate system
+    defined by img. I.e. the coordinate (0,0) refers to the top left of the
+    table, not to the top left of the screen.
+    """
     cells = img_2_cells(img)
     return cells_2_table(cells)
