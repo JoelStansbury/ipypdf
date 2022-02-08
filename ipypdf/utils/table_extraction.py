@@ -88,6 +88,7 @@ def find_words(bbox, words):
         c = d["center"]
         if contains(bbox, c[0],c[1]):
             s += " " + w
+    s = s.strip().strip("|").strip()
     return s
 
 def cells_2_table(cells, h_thresh=20, w_thresh=20):
