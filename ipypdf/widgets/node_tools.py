@@ -67,9 +67,13 @@ TESS_DESC = ('Text Extraction uses <a href="'
     + "handle slide shows better than layoutparser as it was trained "
     + "on a much more diverse dataset.")
 
+NAVIGATOR = None
 class NodeDetail(Tab):
-    def __init__(self, node):
+    def __init__(self, node, nav_hook):
         super().__init__()
+        global NAVIGATOR
+        NAVIGATOR = nav_hook
+
         self.node = node
         self.tabs = [
             HTML("Select a section for inspection"),
@@ -119,6 +123,7 @@ class MyTab(HBox):
         self.delete_btn = SmallButton("trash", "Delete this node and all of its children", self.delete_node,"ipypdf-red")
 
     def add_node(self, btn):
+        NAVIGATOR.draw_bboxes.value = False
         new_node = MyNode(
             data={
                 "type": self._types[btn],

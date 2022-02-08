@@ -34,7 +34,7 @@ class App(ipyw.HBox):
         self.canvas = PdfCanvas(height=1000)
         self.tree_visualizer = TreeWidget(indir)
         self.root = self.tree_visualizer.root
-        self.node_detail = NodeDetail(self.root)
+        self.node_detail = NodeDetail(self.root, self.navigator)
 
         self.tree_visualizer.observe(
             self.on_selection_change, "selected_nodes"
