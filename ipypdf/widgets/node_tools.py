@@ -488,7 +488,7 @@ class AutoTools(MyTab):
                 "children": {},
                 "content": [],
             },
-            parent="" if self.to_text.value else self.node._id,
+            parent="" if self.to_txt.value else self.node._id,
         )
         path = self.node._path
         pages = ImageContainer(path, bulk_render=False).info["Pages"]
