@@ -16,6 +16,9 @@ def sort_layout(layout: list):
 
     def column(pil_coords):
         # NOTE: This places an upper-bound on columns
+        # TODO: Check for changes in the predicted number of columns
+        # and fix multi-column blocks vertically so that they don't get pushed
+        # to the end if it changes further down 
         x1, _, x2, _ = pil_coords
 
         if abs(x1 - x_min) < (page_width / 20):

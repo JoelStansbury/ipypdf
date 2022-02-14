@@ -85,7 +85,7 @@ class App(ipyw.HBox):
             fname = node._path
             self.node_detail.set_node(node)
 
-            if fname.suffix == ".pdf":
+            if fname.suffix.lower() == ".pdf":
                 if fname != self.fname:
                     self.imgs = ImageContainer(
                         fname, bulk_render=self.bulk_render

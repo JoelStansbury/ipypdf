@@ -3,7 +3,6 @@ import numpy as np
 import PIL.Image as pil
 import pytesseract as tess
 
-# TODO: combine img_2_cells and cells_2_table into one function
 # TODO: create a clustering approach for tables without solid borders
 
 
@@ -21,6 +20,8 @@ def img_2_cells(img, approximate_cell_height=20, approximate_cell_width=150):
         bbox and text of detected cells. The elements are ordered first by
         column, then by row.
     """
+
+    # Use Tess to find all words in the image
     words = image_2_words(img)
 
     img = np.array(img)
@@ -33,11 +34,8 @@ def img_2_cells(img, approximate_cell_height=20, approximate_cell_width=150):
     )
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(
-        src=imgray, thresh=180, maxval=255, type=cv2.THRESH_BINARY_INV
+        src=imgray, thresh=160, maxval=255, type=cv2.THRESH_BINARY_INV
     )
-
-    # kernel = np.ones((5, 5), np.uint8)
-    # dilated_value = cv2.dilate(thresh, kernel, iterations=1)
 
     contours, hierarchy = cv2.findContours(
         thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
@@ -46,13 +44,16 @@ def img_2_cells(img, approximate_cell_height=20, approximate_cell_width=150):
     for contour, hierarchy in zip(contours, hierarchy[0]):
         x, y, w, h = cv2.boundingRect(contour)
         if w > approximate_cell_width and h > approximate_cell_height:
-            # text = tess.image_to_string(
-            #     pil.fromarray(img).crop((x, y, x + w, y + h)), 
-            #     config="--psm 12"
-            # ).strip()
+            # bbox found via contours
             cv2_coords = x, y, w, h
+
+            # Find words that fit in the bbox
             text = find_words(cv2_coords, words)
+
+            # Add cell to list
             items.append((cv2_coords, text))
+    
+    # Sort by y break ties by x
     items.sort(
         key=lambda x: (
             x[0][1] // approximate_cell_height,
@@ -90,6 +91,7 @@ def find_words(bbox, words):
             s += " " + w
     s = s.strip().strip("|").strip()
     return s
+
 
 def cells_2_table(cells, h_thresh=20, w_thresh=20):
     """
@@ -167,11 +169,14 @@ def cells_2_table(cells, h_thresh=20, w_thresh=20):
     return rows
 
 
-def img_2_table(img, img_coords=None):
+def img_2_table(img, img_coords=None, no_coords=False):
     """
     By default, the coordinates returned will be on the coordinate system
     defined by img. I.e. the coordinate (0,0) refers to the top left of the
     table, not to the top left of the screen.
     """
     cells = img_2_cells(img)
-    return cells_2_table(cells)
+    table = cells_2_table(cells)
+    if no_coords:
+        table = [[x[1] for x in row] for row in table]
+    return table

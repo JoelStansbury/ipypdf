@@ -78,7 +78,7 @@ def rel_2_cv2(rel_coords, w, h):
 
 
 class ImageContainer:
-    def __init__(self, fname, bulk_render=True, dpi=300):
+    def __init__(self, fname, bulk_render=True, dpi=200):
         self.info = pdfinfo_from_path(str(fname))
         self.bulk_render = bulk_render
         self.dpi = dpi
