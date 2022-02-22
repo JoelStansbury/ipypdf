@@ -36,6 +36,7 @@ see `DEVELOPMENT.md`
 * AutoTools widget keeps saying layoutparser is not installed
     * This is usually a problem with pywin32.
     * Try `conda install pywin32`
+    * Also make sure that numpy is <1.19.3
 
 ## Usage
 ipypdf is build for jupyter lab but should also work in jupyter notebooks.
