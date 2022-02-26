@@ -57,6 +57,8 @@ def grid_detect(
         if not out:  # inside of a peak
             if val > 1.5:
                 to_del.add(len(grid_y)-1)
+    if len(grid_y[-1]) == 1:
+        grid_y[-1].append(im.size[1]-1)
 
     # remove spans which exceed the limit of being considered a row.
     # (this is used to filter out horizontal and vertical lines)
@@ -99,6 +101,8 @@ def grid_detect(
         if not out:  # inside of a peak
             if val > 1.5:
                 to_del.add(len(grid_x)-1)
+    if len(grid_x[-1]) == 1:
+        grid_x[-1].append(im.size[0]-1)
     
     # remove spans which exceed the limit of being considered a row.
     # (this is used to filter out horizontal and vertical lines)
