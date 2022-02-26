@@ -1,6 +1,7 @@
 import json
 from collections import defaultdict
 from pathlib import Path
+import uuid
 
 from ipytree import Node, Tree
 from traitlets import List, Unicode, observe
@@ -103,7 +104,10 @@ class MyNode(Node):
         super().__init__()
         self._type = data["type"]
         self.content = data.get("content", [])
-        NODE_REGISTER[self._id] = self
+        self.metadata = data.get("metadata", {})
+        self.uuid = data.get("uuid", str(uuid.uuid1()))
+
+        NODE_REGISTER[self.uuid] = self
         self.parent = parent
 
         # Use the path specified in the data dict if it exists.
@@ -139,7 +143,7 @@ class MyNode(Node):
                     )
 
     def add_node(self, node):
-        node.parent = self._id
+        node.parent = self.uuid
         if self._path and not node._path:
             node._path = self._path
         super().add_node(node)
@@ -152,7 +156,7 @@ class MyNode(Node):
             NODE_REGISTER[self.parent]._delete(self)
         for n in self.nodes:
             n.delete()
-        NODE_REGISTER.pop(self._id)
+        NODE_REGISTER.pop(self.uuid)
 
     @observe("label")
     def set_name(self, _):
@@ -186,13 +190,17 @@ class MyNode(Node):
 
     def _to_dict(self):
         return {
-            "label": self.label,
-            "content": self.content,
             "type": self._type,
+            "label": self.label,
+            "uuid": self.uuid,
+            "metadata": self.metadata,
+            "content": self.content,
             "children": [c._to_dict() for c in self.nodes],
         }
 
     def to_dict(self):
+        # TODO: This only works for directories, should make this more generic
+        # and use a special function for exporting the doc_tree
         if NODE_KWARGS[self._type]["make_dict"]:
             return {self._path: [c._to_dict() for c in self.nodes]}
         else:
