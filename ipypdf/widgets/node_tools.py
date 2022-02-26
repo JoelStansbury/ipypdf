@@ -438,6 +438,7 @@ class Cytoscape(MyTab):
                 )
             )
 
+
 class AutoTools(MyTab):
     def __init__(self, node):
         super().__init__()

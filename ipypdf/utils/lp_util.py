@@ -21,7 +21,7 @@ def sort_layout(layout: list):
         # to the end if it changes further down 
         x1, _, x2, _ = pil_coords
 
-        if abs(x1 - x_min) < (page_width / 20):
+        if abs(x1 - x_min) < (page_width / 3): # Max of 3 columns
             return 0
 
         # if it is centered then column = 0
