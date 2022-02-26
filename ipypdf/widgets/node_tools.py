@@ -130,7 +130,7 @@ class MyTab(HBox):
                 "path": self.node._path,
                 "children": {},
             },
-            parent=self.node._id,
+            parent=self.node.uuid,
         )
         self.node.add_node(new_node)
         new_node.selected = True
@@ -206,6 +206,7 @@ class TextBlockTools(MyTab):
 class SpacyInsights(MyTab):
     def __init__(self, node):
         super().__init__()
+        self.node = node
         self._init()
 
     def _init(self,_=None):
@@ -213,14 +214,24 @@ class SpacyInsights(MyTab):
             self.nlp = spacy.load("en_core_web_lg")
             self.refresh_btn = SmallButton("refresh","Refresh Tables",self.refresh)
             self.utils = HBox([self.refresh_btn])
-            self.children = [self.utils]
         except OSError:
-            self.children = [
+            self.utils = [
                 ScriptAction(
                     message="Spacy en_core_web_lg is required to use this toolkit",
                     args=["spacy","download","en_core_web_lg"],
                     callback=self._init
                 )
+            ]
+        
+    def set_node(self, node):
+        super().set_node(node)
+        self.children = [self.utils]
+        self.node = node
+        if "spacy-ents" in self.node.metadata:
+            ents = self.node.metadata["spacy-ents"]
+            df = pd.DataFrame(ents)
+            self.children = [
+                VBox([self.utils, DataFrame(df)])
             ]
 
     def refresh(self, _=None):
@@ -232,6 +243,7 @@ class SpacyInsights(MyTab):
         for k, v in ents.items():
             ent_rows.append({"Entity": k[0], "Label": k[1], "Count": v})
         ent_rows.sort(key=lambda x: x["Count"], reverse=True)
+        self.node.ents = ent_rows
         ents = pd.DataFrame(ent_rows)
         token_df = pd.DataFrame(
             [
@@ -259,16 +271,17 @@ class Cytoscape(MyTab):
         )
         self.slider = FloatSlider(0.4, min=0, max=1)
         self.config_btn_recursive = Checkbox(True, description="Recursive")
-        self.confib_btn_intradoc = Checkbox(
+        self.config_btn_intradoc = Checkbox(
             True, description="Intra-document connections"
         )
+        self.export_btn = SmallButton("download", "Save edgelist", self.export_edge_list)
         self.children = [
             VBox(
                 [
                     self.refresh_btn,
                     self.slider,
                     self.config_btn_recursive,
-                    self.confib_btn_intradoc,
+                    self.config_btn_intradoc,
                     HTML("Hit refresh to generate cytoscape"),
                 ]
             )
@@ -286,7 +299,7 @@ class Cytoscape(MyTab):
                     self.refresh_btn,
                     self.slider,
                     self.config_btn_recursive,
-                    self.confib_btn_intradoc,
+                    self.config_btn_intradoc,
                     HTML("loading..."),
                 ]
             )
@@ -310,60 +323,55 @@ class Cytoscape(MyTab):
                         self.refresh_btn,
                         self.slider,
                         self.config_btn_recursive,
-                        self.confib_btn_intradoc,
+                        self.config_btn_intradoc,
                         HTML("Not enough nodes"),
                     ]
                 )
             ]
             return
 
+        print(sim[0])
         colors = list(
             mcolors.cnames
         )  # [x.split(":")[1] for x in mcolors.TABLEAU_COLORS]
         shuffle(colors)
 
-        files = set([x._path for x in sim])
+        files = set([x[0]._path for x in sim])
         cmap = {k: colors[i] for i, k in enumerate(files)}
 
         g_edges = []
-        pairs = set()
+        self.edges = []
         nodes_with_edges = set()
-        for source, edges in sim.items():
-            for edge in edges:
-                target, weight = edge
-                if weight > self.slider.value and source._id != target._id:
-                    pair = tuple(sorted([source._id, target._id]))
-                    if pair not in pairs:
-                        if self.confib_btn_intradoc.value:
-                            nodes_with_edges.add(source)
-                            nodes_with_edges.add(target)
-                            g_edges.append(
-                                {
-                                    "data": {
-                                        "source": source._id,
-                                        "target": target._id,
-                                    }
-                                }
-                            )
-                            pairs.add(pair)
-                        elif source._path != target._path:
-                            nodes_with_edges.add(source)
-                            nodes_with_edges.add(target)
-                            g_edges.append(
-                                {
-                                    "data": {
-                                        "source": source._id,
-                                        "target": target._id,
-                                    }
-                                }
-                            )
-                            pairs.add(pair)
+        for source, target, weight in sim:
+            if weight > self.slider.value and source.uuid != target.uuid:
+                self.edges.append(
+                    [
+                        source.uuid,
+                        target.uuid,
+                        weight
+                    ]
+                )
+
+                if (
+                    self.config_btn_intradoc.value 
+                    or source._path != target._path
+                ):
+                    nodes_with_edges.add(source)
+                    nodes_with_edges.add(target)
+                    g_edges.append(
+                        {
+                            "data": {
+                                "source": source.uuid,
+                                "target": target.uuid,
+                            }
+                        }
+                    )
 
         graph_dict = {
             "nodes": [
                 {
                     "data": {
-                        "id": node._id,
+                        "id": node.uuid,
                         "color": cmap[node._path],
                         "name": node.label,
                     }
@@ -380,10 +388,15 @@ class Cytoscape(MyTab):
         self.children = [
             VBox(
                 [
-                    self.refresh_btn,
+                    HBox(
+                        [
+                            self.export_btn,
+                            self.refresh_btn,
+                        ]
+                    ),
                     self.slider,
                     self.config_btn_recursive,
-                    self.confib_btn_intradoc,
+                    self.config_btn_intradoc,
                     cyto,
                 ]
             )
@@ -414,7 +427,17 @@ class Cytoscape(MyTab):
                 },
             ]
         )
-
+    
+    def export_edge_list(self, _=None):
+        path = str(self.node._path) + "_edgelist.csv"
+        with open(path, 'w') as f:
+            f.write(
+                "\n".join(
+                    [','.join([str(x) for x in e])
+                    for e in self.edges
+                    ]
+                )
+            )
 
 class AutoTools(MyTab):
     def __init__(self, node):
@@ -493,7 +516,7 @@ class AutoTools(MyTab):
                 "children": {},
                 "content": [],
             },
-            parent="" if self.to_txt.value else self.node._id,
+            parent="" if self.to_txt.value else self.node.uuid,
         )
         path = self.node._path
         pages = ImageContainer(path, bulk_render=False).info["Pages"]
@@ -523,7 +546,8 @@ class AutoTools(MyTab):
             m = f"Writing to: {fname}"
             self.info.add(m)
             with open(fname, "w") as f:
-                json.dump(text_node.to_dict(), f)
+                # using _to_dict here because to_dict only works for directories
+                json.dump(text_node._to_dict(), f)
             text_node.delete()
             self.info.remove(m)
 
@@ -541,7 +565,13 @@ class AutoTools(MyTab):
         # if piping straight to file, then make a detatched node so we don't
         # waste time rendering widgets
         # NOTE: maybe this doesn't work
-        root = MyNode(data={"type":"pdf","children":{}}) if self.to_txt.value else self.node
+        root = MyNode(
+            data={
+                "type":"pdf",
+                "children":{},
+                "path":path
+            }
+        ) if self.to_txt.value else self.node
         last_section = root
 
         i=0
@@ -567,7 +597,7 @@ class AutoTools(MyTab):
                             ],
                             "label": block.text,
                         },
-                        parent=root._id,
+                        parent=root.uuid,
                     )
                     root.add_node(last_section)
                 elif block.type in ["List", "Text"]:
@@ -583,7 +613,7 @@ class AutoTools(MyTab):
                                     }
                                 ],
                             },
-                            parent=last_section._id,
+                            parent=last_section.uuid,
                         )
                     )
                 elif block.type == "Figure":
@@ -599,7 +629,7 @@ class AutoTools(MyTab):
                                     }
                                 ],
                             },
-                            parent=last_section._id,
+                            parent=last_section.uuid,
                         )
                     )
                 elif block.type == "Table":
@@ -614,7 +644,7 @@ class AutoTools(MyTab):
                                 }
                             ],
                         },
-                        parent=last_section._id,
+                        parent=last_section.uuid,
                     )
                     last_section.add_node(table_node)
                     TableTools(table_node).parse_table()
@@ -629,8 +659,7 @@ class AutoTools(MyTab):
             m = f"Writing to: {fname}"
             self.info.add(m)
             with open(fname, "w") as f:
-                json.dump(root.to_dict(), f)
-            root.delete()
+                json.dump([c._to_dict() for c in root.nodes], f)
             self.info.remove(m)
 
         if isinstance(btn, Button):
@@ -676,8 +705,8 @@ class TableTools(MyTab):
 
     def set_node(self, node):
         super().set_node(node)
-        if len(node.content) > 1:
-            rows = node.content[-1]["value"]
+        if "table" in self.node.metadata:
+            rows = self.node.metadata["table"]
             df = pd.DataFrame(rows)
             self.children = [
                 VBox(
@@ -711,13 +740,7 @@ class TableTools(MyTab):
                         "coords": rel_coords,
                     }
                 )
-        self.node.content.append(
-            {
-                "value": [[c[1] for c in r] for r in rows],
-                "page": self.node.content[0]["page"],
-                "coords": self.node.content[0]["coords"],
-            }
-        )
+        self.node.metadata["table"] = [[c[1] for c in r] for r in rows]
 
         # Refresh the tab to show the table
         self.set_node(self.node)

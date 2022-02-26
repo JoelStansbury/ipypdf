@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
 
-from numpy import array, dot, zeros
+from numpy import array, dot, zeros, flip
 from numpy.linalg import norm
 
 
@@ -102,15 +102,15 @@ def tfidf_similarity(docs: dict):
     doc_keys, X = zip(*doc_vectors.items())
     X = array(X)
     sim = [
-        dot(X, x) / (norm(X, axis=1) * norm(x)) for x in X
+        dot(X[i+1:], x) / (norm(X[i+1:], axis=1) * norm(x)) for i,x in enumerate(X)
     ]  # cosine similarity between all other docs
+    dr = doc_keys[::-1]
 
-    return {
-        key: sorted(
-            list(zip(doc_keys, sim_vector)), key=lambda x: x[1], reverse=True
-        )
+    # return a list of source,target,weight pairs
+    return sum([
+        [[key] + list(t_w) for t_w in list(zip(dr, flip(sim_vector)))]
         for key, sim_vector in zip(doc_keys, sim)
-    }
+    ],[])
 
 
 def levenshtein_distance(s, t):
