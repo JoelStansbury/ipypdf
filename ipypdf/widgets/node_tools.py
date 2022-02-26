@@ -330,7 +330,6 @@ class Cytoscape(MyTab):
             ]
             return
 
-        print(sim[0])
         colors = list(
             mcolors.cnames
         )  # [x.split(":")[1] for x in mcolors.TABLEAU_COLORS]
