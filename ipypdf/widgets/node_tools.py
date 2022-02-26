@@ -726,21 +726,8 @@ class TableTools(MyTab):
         coords = self.node.content[0]["coords"]
 
         cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
-        table_coords = rel_2_cv2(coords, img.width, img.height)
         rows = img_2_table(cropped_img)
-        for r in rows:
-            for cell in r:
-                rel_coords = cv2_2_rel(
-                    cell[0], img.width, img.height, table_coords
-                )
-                self.node.content.append(
-                    {
-                        "value": cell[1],
-                        "page": self.node.content[0]["page"],
-                        "coords": rel_coords,
-                    }
-                )
-        self.node.metadata["table"] = [[c[1] for c in r] for r in rows]
+        self.node.metadata["table"] = rows
 
         # Refresh the tab to show the table
         self.set_node(self.node)

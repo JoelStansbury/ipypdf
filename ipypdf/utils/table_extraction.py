@@ -1,182 +1,193 @@
-import cv2 # Temporarily removing due to conda issues
 import numpy as np
-import PIL.Image as pil
+import pandas as pd
 import pytesseract as tess
 
-# TODO: create a clustering approach for tables without solid borders
-
-
-def img_2_cells(img, approximate_cell_height=20, approximate_cell_width=150):
+def grid_detect(
+    im,
+    v_thresh=0.05,
+    h_thresh=0.05,
+    min_v_gap = 10, # pixels
+    min_h_gap = 15, # pixels
+):
     """
-    img <PIL.Image>: image of a table
-    approximate_cell_height (pixels) <int>: This is used as a lower bound for
-        valid cells. It is also used to distinguish between different rows for
-        the purpose of ordering items in the output
-    approximate_cell_width (pixels) <int>: This is used as a lower bound for
-        valid cells. It is also used to distinguish between different columns
-        for the purpose of ordering items in the output
+    This method assumes that darker pixels correspond to text within a cell. The mask
+    used to generate the cell grid is just the normalized black/white image. This method is
+    faster but more noisy than the ocr method.
 
-    return <list<tuple(cv2_coords, text)>>: A list of tuples containing the
-        bbox and text of detected cells. The elements are ordered first by
-        column, then by row.
-    """
-
-    # Use Tess to find all words in the image
-    words = image_2_words(img)
-
-    img = np.array(img)
-    img = cv2.rectangle(
-        img=img,
-        pt1=(1, 1),
-        pt2=(len(img[0]) - 1, len(img) - 1),
-        color=(0, 0, 0),
-        thickness=2,
-    )
-    imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    ret, thresh = cv2.threshold(
-        src=imgray, thresh=160, maxval=255, type=cv2.THRESH_BINARY_INV
-    )
-
-    contours, hierarchy = cv2.findContours(
-        thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
-    )
-    items = []
-    for contour, hierarchy in zip(contours, hierarchy[0]):
-        x, y, w, h = cv2.boundingRect(contour)
-        if w > approximate_cell_width and h > approximate_cell_height:
-            # bbox found via contours
-            cv2_coords = x, y, w, h
-
-            # Find words that fit in the bbox
-            text = find_words(cv2_coords, words)
-
-            # Add cell to list
-            items.append((cv2_coords, text))
+    :params:
+    im <PIL.Image or imarray>: Image of a table
+        
+    v_thresh <float> (0.1): Threshold for considering a row of pixels to be considered
+        a vertical boundary in the grid. Higher values mean fewer rows.
+        
+    h_thresh <float> (0.1): Threshold for considering a column of pixels to be considered
+        a horizontal boundary in the grid. Higher values mean fewer columns.
     
-    # Sort by y break ties by x
-    items.sort(
-        key=lambda x: (
-            x[0][1] // approximate_cell_height,
-            x[0][0] // approximate_cell_width,
-        )
-    )
-    return items
-
-
-def contains(coords, px, py):
-    x, y, w, h = coords
-    return x < px and x + w > px and y < py and y + h > py
-
-
-def image_2_words(img):
-    data = tess.image_to_data(img)
-    data = [x.split() for x in data.split("\n")][:-1]
-    data = [dict(zip(data[0], data[i])) for i in range(1,len(data))]
-    data = [x for x in data if "text" in x]
-    data = [
-        {
-            "text": x["text"],
-            "center": (int(x["left"])+int(x["width"])/2, int(x["top"])+int(x["height"])/2)
-        } for x in data
-    ]
-    return data
-
-
-def find_words(bbox, words):
-    s = ''
-    for d in words:
-        w = d["text"]
-        c = d["center"]
-        if contains(bbox, c[0],c[1]):
-            s += " " + w
-    s = s.strip().strip("|").strip()
-    return s
-
-
-def cells_2_table(cells, h_thresh=20, w_thresh=20):
+    :returns:
+    grid <list>: list of bboxes corresponding to predicted cells
     """
-    Given the cells returned from img_2_cells will try to construct a table
+    
+    mask=np.array(im).sum(axis=2).T
+    mask=mask/mask.max()
+    mask-=1
+    mask = abs(mask)
+    mask = (mask>0.1).astype(int)
 
-    cells <list<tuple(cv2_coords, str)>>: list of cells returned from img_2_cells
-    h_thresh <int>: Sets the threshold (in pixel distance) required
-        for two cells to be considered different rows
-    w_thresh <int>: Sets the threshold (in pixel distance) required
-        for two cells to be considered different columns
-    """
+    v_density = mask.sum(axis=0)/max(mask.sum(axis=0))
+    h_density = mask.sum(axis=1)/max(mask.sum(axis=1))
+    
+    # scale up the density vectors so that the mean is equal to 0.2
+    # this makes the thresholds directly related to the average density
+    v_density = v_density / (np.mean(v_density)*4)
+    h_density = h_density / (np.mean(h_density)*4)
+    
+    
+    # move down the image and record spans which exceed the threshold for being considered a row
+    grid_y = []
+    to_del = set()
+    y=0
+    out=True
+    for y,val in enumerate(v_density):
+        if val>v_thresh and out:
+            out=False
+            grid_y.append([y])
+        if not val > v_thresh and not out:
+            grid_y[-1].append(y)
+            out = True
+        if not out:  # inside of a peak
+            if val > 1.5:
+                to_del.add(len(grid_y)-1)
 
-    # find all row and column boundaries
-    column_positions = set()
-    row_positions = set()
-    for cv2_coords, _ in cells:
-        # thresh*(x//thresh) is used to filter out small deviations in bboxes
-        column_positions.add(w_thresh * (cv2_coords[0] // w_thresh))
-        column_positions.add(
-            w_thresh * ((cv2_coords[0] + cv2_coords[2]) // w_thresh)
-        )
-        row_positions.add(h_thresh * (cv2_coords[1] // h_thresh))
-        row_positions.add(
-            h_thresh * ((cv2_coords[1] + cv2_coords[3]) // h_thresh)
-        )
-
-    # find the centers of each cell according to the boundaries identified above
-    cp = sorted(list(column_positions))
-    cp = [cp[i] + (cp[i + 1] - cp[i]) / 2 for i in range(len(cp) - 1)]
-
-    rp = sorted(list(row_positions))
-    rp = [rp[i] + (rp[i + 1] - rp[i]) / 2 for i in range(len(rp) - 1)]
-
-    # identify the cells found in the image which best fit each of the cell
-    # midpoints found above
-    rows = []
-    for y in rp:
-        row = []
-        for x in cp:
-            # find all potential cells which could be used for this position
-            candidate_cells = [
-                cell for cell in cells if contains(cell[0], x, y)
-            ]
-            # sort by area
-            candidate_cells.sort(key=lambda cell: cell[0][2] * cell[0][3])
-            # use the smallest cell that encompases the midpoint
-            if candidate_cells:
-                row.append(candidate_cells[0])
-            else:
-                row.append((None, ""))
-        rows.append(tuple(row))
-
-    # remove duplicate rows
-    unique = []
-    for r in rows:
-        if r not in unique:
-            unique.append(r)
-    rows = [list(r) for r in unique]
-
-    # remove duplicate columns
-    columns_to_remove = []
-    unique_columns = []
-    for c in range(len(rows[0])):
-        col = []
-        for r in rows:
-            col.append(r[c])
-        if tuple(col) in unique_columns:
-            columns_to_remove.append(c)
+    # remove spans which exceed the limit of being considered a row.
+    # (this is used to filter out horizontal and vertical lines)
+    for x in sorted(list(to_del),reverse=True):
+        grid_y.pop(x)
+    
+    # join spans which are too close together
+    # (ocr does this in its own way, taking advantage of known character height)
+    tmp = [grid_y[0]]
+    for gy in grid_y[1:]:
+        l = tmp[-1][1]
+        r = gy[0]
+        if r-l < min_v_gap:
+            tmp[-1][1] = gy[1]
         else:
-            unique_columns.append(tuple(col))
-    for c in columns_to_remove[::-1]:
-        for r in rows:
-            r.pop(c)
+            tmp.append(gy)
+    grid_y = tmp
 
-    return rows
+    # expand to fill
+    grid_y[0][0]=0
+    grid_y[-1][1]=im.size[1]-1
+    for i in range(len(grid_y)-1):
+        x1 = grid_y[i][1] # end of this
+        x2 = grid_y[i+1][0] # begining of next
+        m = int((x1+x2)/2)
+        grid_y[i][1]=m
+        grid_y[i+1][0]=m
+    
+    grid_x = []
+    to_del = set()
+    x=0
+    out=True
+    for x,val in enumerate(h_density):
+        if val>h_thresh and out:
+            out = False
+            grid_x.append([x])
+        if not val>h_thresh and not out:
+            grid_x[-1].append(x)
+            out = True
+        if not out:  # inside of a peak
+            if val > 1.5:
+                to_del.add(len(grid_x)-1)
+    
+    # remove spans which exceed the limit of being considered a row.
+    # (this is used to filter out horizontal and vertical lines)
+    for x in sorted(list(to_del),reverse=True):
+        grid_x.pop(x)
 
+    # join spans which are too close together
+    # (ocr does this in its own way, taking advantage of known character height)
+    tmp = [grid_x[0]]
+    for gx in grid_x[1:]:
+        b = tmp[-1][1]
+        t = gx[0]
+        if t-b < min_h_gap:
+            tmp[-1][1] = gx[1]
+        else:
+            tmp.append(gx)
+    grid_x = tmp
+    
+    # expand to fill
+    grid_x[0][0]=0
+    grid_x[-1][1]=im.size[0]-1
+    for i in range(len(grid_x)-1):
+        x1 = grid_x[i][1] # end of this
+        x2 = grid_x[i+1][0] # begining of next
+        m = int((x1+x2)/2)
+        grid_x[i][1]=m
+        grid_x[i+1][0]=m
+        # diff = x2-x1
+        # grid_x[i][1]+=int(3*diff/4)
+        # grid_x[i+1][0]-=int(diff/4)
+    
+    grid = []
+    for y in grid_y:
+        y1,y2 = y
+        for x in grid_x:
+            x1,x2 = x
+            grid.append([x1,y1,x2-x1,y2-y1])
 
-def img_2_table(img, img_coords=None, no_coords=False):
-    """
-    By default, the coordinates returned will be on the coordinate system
-    defined by img. I.e. the coordinate (0,0) refers to the top left of the
-    table, not to the top left of the screen.
-    """
-    cells = img_2_cells(img)
-    table = cells_2_table(cells)
-    if no_coords:
-        table = [[x[1] for x in row] for row in table]
-    return table
+    return grid
+
+def contains(coords1, coords2):
+    xa, ya, wa, ha = coords1
+    xb, yb, wb, hb = coords2
+    px = xb + wb/2
+    py = yb + hb/2
+    return xa < px and (xa + wa) > px and ya < py and (ya + ha) > py
+
+def grid_2_table(grid, df=None):
+    cells = [[""] for cell in grid]
+    for i,bbox in enumerate(df[['left', 'top', 'width', 'height']].values):
+        text = df["text"][i]
+        for j, cell in enumerate(grid):
+            if contains(cell, bbox):
+                cells[j].append(text)
+    n = len(set([x[0] for x in grid]))
+    cells = [" ".join(x) for x in cells]
+    return [cells[i:i+n] for i in range(0,len(cells),n)]
+
+def tessdata_to_df(tessdata, keep_garbage=False):
+    """Ingests a string repr of tesseract output and spits out a dataframe"""
+    rows = [r.split("\t") for r in tessdata.split("\n")[:-1]]
+    h = rows[0]
+    rows = rows[1:]
+        
+    df = pd.DataFrame(rows)
+    df.columns = h
+    
+    # set types
+    dtypes = [int]*10 + [float, str]
+    for c,t in zip(df.columns, dtypes):
+        df[c] = df[c].values.astype(t)
+    
+    if not keep_garbage:
+        df = df[[x.strip() != "" for x in df["text"]]]
+        df = df[df["conf"] > 0].reset_index()
+    
+    return df
+
+def im_to_data(im):
+    tessdata = tess.image_to_data(im, config="--psm 1")
+    return tessdata_to_df(tessdata)
+
+def img_2_table(im):
+    grid = grid_detect(
+        im, 
+        v_thresh=.1,
+        h_thresh=.2,
+        min_v_gap = 5, # pixels
+        min_h_gap = 10, # pixels
+    )
+    df = im_to_data(im)
+    return grid_2_table(grid, df)
