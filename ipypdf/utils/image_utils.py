@@ -1,6 +1,8 @@
 import io
+from pathlib import Path
 
-from ipywidgets import Image
+from PIL import Image
+import ipywidgets as ipyw
 from pdf2image import convert_from_path, pdfinfo_from_path
 
 
@@ -38,7 +40,7 @@ def rel_2_canvas(rel_coords, w, h):
 def pil_2_widget(img, format="png"):
     imgByteArr = io.BytesIO()
     img.save(imgByteArr, format=format)
-    return Image(value=imgByteArr.getvalue())
+    return ipyw.Image(value=imgByteArr.getvalue())
 
 
 def rel_2_pil(rel_coords, w, h):
@@ -79,6 +81,12 @@ def rel_2_cv2(rel_coords, w, h):
 
 class ImageContainer:
     def __init__(self, fname, bulk_render=True, dpi=200):
+        fname = Path(fname)
+        parent = fname.parent
+        filename = ''.join(fname.parts[-1].split('.')[:-1])
+        self.imgdir = parent / (filename + "_imgs")
+        self.imgdir.mkdir(exist_ok=True)
+
         self.info = pdfinfo_from_path(str(fname))
         self.bulk_render = bulk_render
         self.dpi = dpi
@@ -88,9 +96,16 @@ class ImageContainer:
             self.fname = str(fname)
 
     def __getitem__(self, i):
-        if self.bulk_render:
-            return self.imgs[i]
-        # manual page indexing starts at 1
-        return convert_from_path(
-            str(self.fname), first_page=i + 1, last_page=i + 1, dpi=self.dpi
-        )[0]
+        im_filename = f"{self.imgdir}/{i}.png"
+        if Path(im_filename).exists():
+            return Image.open(im_filename)
+        else:
+            if self.bulk_render:
+                img = self.imgs[i]
+            else:
+                # manual page indexing starts at 1
+                img = convert_from_path(
+                    str(self.fname), first_page=i + 1, last_page=i + 1, dpi=self.dpi
+                )[0]
+            img.save(im_filename)
+            return img

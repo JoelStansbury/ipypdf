@@ -2,6 +2,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 import uuid
+from time import sleep
 
 from ipytree import Node, Tree
 from traitlets import List, Unicode, observe
@@ -67,7 +68,7 @@ def node_factory(directory):
 
     data["type"] = "folder"
     data["path"] = path
-    return MyNode(label=str(directory), data=data)
+    return MyNode(label=str(directory), data=data, autoload=False)
 
 
 def set_node_type(cursor, c_path):
@@ -87,7 +88,6 @@ class TreeWidget(Tree):
         self.add_class("ipypdf-doc-tree")
         self.root = node_factory(directory)
         self.add_node(self.root)
-        self.root.collapse_to(2)
 
 
 class MyNode(Node):
@@ -100,12 +100,14 @@ class MyNode(Node):
             path=None,
             data=None,
             parent=None,
+            autoload=True,
         ):
         super().__init__()
-        self._type = data["type"]
+        self._type = data.get("type", "text")
         self.content = data.get("content", [])
         self.metadata = data.get("metadata", {})
         self.uuid = data.get("uuid", str(uuid.uuid1()))
+        self.child_data_to_load = data.get("children", [])
 
         NODE_REGISTER[self.uuid] = self
         self.parent = parent
@@ -121,26 +123,60 @@ class MyNode(Node):
         self.name = truncate(self.label) + page
         self.icon = NODE_KWARGS[self._type]["icon"]
 
-        if data is not None and "children" in data:
-            children = data["children"]
-            if isinstance(children, dict):
-                for label, d in children.items():
-                    self.add_node(
-                        MyNode(
-                            label=label,
-                            path=self._path,
-                            data=d
+        self.opened = False
+        if autoload:
+            self.opened = True
+            self.opened = False
+        
+        if self.child_data_to_load:
+            self.nodes = [
+                MyNode(
+                    label="loading ...",
+                    path=self._path,
+                    data={},
+                )
+            ]
+        
+    @observe("opened",type="change")
+    def on_open(self, event=None):
+        if event['new']==True and event['old']==False:
+            children = self.child_data_to_load
+            self.child_data_to_load = []
+            if children:
+                self.nodes = []
+                counter = 0
+                if isinstance(children, dict):
+                    for label, d in children.items():
+                        counter += 1
+                        if (counter % 100) == 0:
+                            sleep(0.0001)
+                        self.add_node(
+                            MyNode(
+                                label=label,
+                                path=self._path,
+                                data=d,
+                                autoload=False,
+                            )
                         )
-                    )
-            elif isinstance(children, list):
-                for d in children:
-                    self.add_node(
-                        MyNode(
-                            label=d["label"],
-                            path=self._path,
-                            data=d
+                elif isinstance(children, list):
+                    for d in children:
+                        counter += 1
+                        if (counter % 100) == 0:
+                            sleep(0.001)
+                        self.add_node(
+                            MyNode(
+                                label=d["label"],
+                                path=self._path,
+                                data=d,
+                                autoload=False,
+                            )
                         )
-                    )
+                for n in self.nodes:
+                    n.opened=True
+                
+                for n in self.nodes:
+                    sleep(0.0001)
+                    n.opened=False
 
     def add_node(self, node):
         node.parent = self.uuid
@@ -233,7 +269,6 @@ class MyNode(Node):
         return " ".join(content)
 
     def to_html(self, level=1):
-
         """"""
         if self._type == "section":
             s = self.label

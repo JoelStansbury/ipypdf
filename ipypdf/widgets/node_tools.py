@@ -36,6 +36,7 @@ from ..utils.image_utils import (
     rel_2_pil,
 )
 from ..utils.nlp import tfidf_similarity
+from ..utils.tree_utils import file_path, stringify
 from ..utils.table_extraction import img_2_table
 from ..utils.tess_utils import get_text_blocks
 from ..utils.lp_util import parse_layout
@@ -104,7 +105,7 @@ class NodeDetail(Tab):
 
     def set_node(self, node):
         self.node = node
-        indexes = NODE_KWARGS[self.node._type]
+        indexes = NODE_KWARGS[self.node.data['type']]
         children = []
         for i in indexes:
             children.append(self.tabs[i])
@@ -124,23 +125,17 @@ class MyTab(HBox):
 
     def add_node(self, btn):
         NAVIGATOR.draw_bboxes.value = False
-        new_node = MyNode(
-            data={
-                "type": self._types[btn],
-                "path": self.node._path,
-                "children": {},
-            },
-            parent=self.node.uuid,
-        )
-        self.node.add_node(new_node)
-        new_node.selected = True
-        self.node.selected = False
+        new_node = {
+            "type": self._types[btn],
+            "children": [],
+        }
+        self.node.controller.insert(new_node, self.node.id)
 
     def set_node(self, node):
         self.node = node
 
     def delete_node(self, _):
-        if self.node._type == "pdf":
+        if self.node.data['type'] == "pdf":
             for node in self.node.nodes:
                 node.delete()
         else:
@@ -182,24 +177,19 @@ class ImageTools(MyTab):
 
 
 class TextBlockTools(MyTab):
-    content = List(default_value=[]).tag(sync=True)
 
     def __init__(self, node):
         super().__init__()
         self.node = node
-        self.link = link((self.node, "content"), (self, "content"))
 
-    @observe("content")
     def redraw_content(self, _=None):
         self.children = [
-            VBox([Textarea(x["value"]) for x in self.node.content]),
+            VBox([Textarea(x["value"]) for x in self.node.data['content']]),
             self.delete_btn,
         ]
 
     def set_node(self, node):
-        self.link.unlink()
         self.node = node
-        self.link = link((self.node, "content"), (self, "content"))
         self.redraw_content()
 
 
@@ -227,15 +217,15 @@ class SpacyInsights(MyTab):
         super().set_node(node)
         self.children = [self.utils]
         self.node = node
-        if "spacy-ents" in self.node.metadata:
-            ents = self.node.metadata["spacy-ents"]
+        if "spacy-ents" in self.node.data:
+            ents = self.node.data["spacy-ents"]
             df = pd.DataFrame(ents)
             self.children = [
                 VBox([self.utils, DataFrame(df)])
             ]
 
     def refresh(self, _=None):
-        doc = self.nlp(self.node.stringify())
+        doc = self.nlp(stringify(self.node))
         ents = defaultdict(int)
         for ent in doc.ents:
             ents[(ent.text, ent.label_)] += 1
@@ -289,7 +279,7 @@ class Cytoscape(MyTab):
 
     def on_node_click(self, event):
         self.node.selected = False
-        NODE_REGISTER[event["data"]["id"]].selected = True
+        NODE_REGISTER[event["data"]["id"]].selected = True  # TODO: fix this
 
     def refresh(self, _=None):
 
@@ -305,14 +295,14 @@ class Cytoscape(MyTab):
             )
         ]
         if self.config_btn_recursive.value:
-            gen = self.node.dfs()
+            gen = self.node.controller.dfs(self.node.id)
             next(gen)  # skip first
-            docs = {node: node.stringify() for node in gen}
+            docs = {node: stringify(node) for node in gen}
         else:
-            docs = {node: node.stringify() for node in self.node.nodes}
+            docs = {node: stringify(node) for node in self.node.nodes}
 
         for doc, v in list(docs.items()):
-            if v == "" or doc.label == "":
+            if v == "":
                 docs.pop(doc)
 
         sim = tfidf_similarity(docs)
@@ -335,33 +325,33 @@ class Cytoscape(MyTab):
         )  # [x.split(":")[1] for x in mcolors.TABLEAU_COLORS]
         shuffle(colors)
 
-        files = set([x[0]._path for x in sim])
+        files = set([file_path(x[0]) for x in sim])
         cmap = {k: colors[i] for i, k in enumerate(files)}
 
         g_edges = []
         self.edges = []
         nodes_with_edges = set()
         for source, target, weight in sim:
-            if weight > self.slider.value and source.uuid != target.uuid:
-                self.edges.append(
-                    [
-                        source.uuid,
-                        target.uuid,
-                        weight
-                    ]
-                )
+            self.edges.append(
+                [
+                    source.id,
+                    target.id,
+                    weight
+                ]
+            )
+            if weight > self.slider.value and source.id != target.id:
 
                 if (
                     self.config_btn_intradoc.value 
-                    or source._path != target._path
+                    or file_path(source) != file_path(target)
                 ):
                     nodes_with_edges.add(source)
                     nodes_with_edges.add(target)
                     g_edges.append(
                         {
                             "data": {
-                                "source": source.uuid,
-                                "target": target.uuid,
+                                "source": source.id,
+                                "target": target.id,
                             }
                         }
                     )
@@ -370,9 +360,9 @@ class Cytoscape(MyTab):
             "nodes": [
                 {
                     "data": {
-                        "id": node.uuid,
-                        "color": cmap[node._path],
-                        "name": node.label,
+                        "id": node.id,
+                        "color": cmap[file_path(node)],
+                        "name": node.data['label'],
                     }
                 }
                 for node in nodes_with_edges
@@ -428,7 +418,7 @@ class Cytoscape(MyTab):
         )
     
     def export_edge_list(self, _=None):
-        path = str(self.node._path) + "_edgelist.csv"
+        path = file_path(self.node).with_suffix("_edgelist.csv")
         with open(path, 'w') as f:
             f.write(
                 "\n".join(
@@ -448,7 +438,7 @@ class AutoTools(MyTab):
         # ---------------------- Options ----------------------
         self.to_txt = Checkbox(description="Export directly to txt file (needed for large docs)", value=False)
         def warn(e):
-            m = f"Warning: output is being piped to {''.join(str(self.node._path).split('.')[:-1])}_output.json"
+            m = f"Warning: output is being piped to {file_path(self.node).with_suffix('_output.json')}"
             if e["new"]:
                 self.info.add(m,1)
                 # self.layoutparser_btn.disabled = True
@@ -509,22 +499,15 @@ class AutoTools(MyTab):
     def extract_text(self, btn=None):
         if isinstance(btn, Button):
             btn.disabled = True
-        text_node = MyNode(
-            data={
-                "type": "text",
-                "path": self.node._path,
-                "children": {},
-                "content": [],
-            },
-            parent="" if self.to_txt.value else self.node.uuid,
-        )
-        path = self.node._path
+        text_node ={
+            "type": "text",
+            "parent": self.node.id,
+            "children": [],
+            "content": [],
+        }
+        path = file_path(self.node)
         pages = ImageContainer(path, bulk_render=False).info["Pages"]
         i=0
-        
-        if not self.to_txt.value:
-            self.node.add_node(text_node)
-
         m = f""
         self.info.add(m)
         for page in get_text_blocks(path):
@@ -538,19 +521,19 @@ class AutoTools(MyTab):
                 tb["coords"] = tb.pop("rel_coords")
                 tb.pop("pil_coords")
                 if tb["value"]:
-                    text_node.content.append(tb)
+                    text_node['content'].append(tb)
         self.info.remove(m)
 
         if self.to_txt.value:
-            fname = f"{'.'.join(str(self.node._path).split('.')[:-1])}_output.json"
+            fname = path.with_suffix("_output.json")
             m = f"Writing to: {fname}"
             self.info.add(m)
             with open(fname, "w") as f:
                 # using _to_dict here because to_dict only works for directories
-                json.dump(text_node._to_dict(), f)
-            text_node.delete()
+                json.dump(text_node, f)
             self.info.remove(m)
-
+        else:
+            self.node.controller.insert(text_node, self.node.id)
 
         if isinstance(btn, Button):
             btn.disabled = False
@@ -559,20 +542,10 @@ class AutoTools(MyTab):
         if isinstance(btn, Button):
             btn.disabled = True
         self.layoutparser_btn.disabled = True
-        path = self.node._path
+        path = file_path(self.node)
 
 
-        # if piping straight to file, then make a detatched node so we don't
-        # waste time rendering widgets
-        # NOTE: maybe this doesn't work
-        root = MyNode(
-            data={
-                "type":"pdf",
-                "children":{},
-                "path":path
-            }
-        ) if self.to_txt.value else self.node
-        last_section = root
+        nodes = []
 
         i=0
         total = ImageContainer(path, bulk_render=False).info['Pages']
@@ -584,10 +557,10 @@ class AutoTools(MyTab):
             for block in layout:
 
                 if block.type == "Title":
-                    last_section = MyNode(
-                        label=block.text,
-                        data={
+                    nodes.append(
+                        {
                             "type": "section",
+                            "icon": "indent",
                             "content": [
                                 {
                                     "value": block.text, 
@@ -596,46 +569,32 @@ class AutoTools(MyTab):
                                 }
                             ],
                             "label": block.text,
+                            "children": []
                         },
-                        parent=root.uuid,
                     )
-                    root.add_node(last_section)
                 elif block.type in ["List", "Text"]:
-                    last_section.add_node(
-                        MyNode(
-                            data={
-                                "type": "text",
-                                "content": [
-                                    {
+                    nodes[-1]["children"].append(
+                        {
+                            "type": "text",
+                            "icon": "align-left",
+                            "content": [
+                                {
+                                    "value": block.text, 
                                         "value": block.text, 
+                                    "value": block.text, 
+                                    "page": i, 
                                         "page": i, 
-                                        "coords": block.relative_coordinates
-                                    }
-                                ],
-                            },
-                            parent=last_section.uuid,
-                        )
+                                    "page": i, 
+                                    "coords": block.relative_coordinates
+                                }
+                            ],
+                        },
                     )
                 elif block.type == "Figure":
-                    last_section.add_node(
-                        MyNode(
-                            data={
-                                "type": "image",
-                                "content": [
-                                    {
-                                        "value": None,
-                                        "page": i,
-                                        "coords": block.relative_coordinates,
-                                    }
-                                ],
-                            },
-                            parent=last_section.uuid,
-                        )
-                    )
-                elif block.type == "Table":
-                    table_node = MyNode(
-                        data={
-                            "type": "table",
+                    nodes[-1]["children"].append(
+                        {
+                            "type": "image",
+                            "icon": "image",
                             "content": [
                                 {
                                     "value": None,
@@ -643,11 +602,27 @@ class AutoTools(MyTab):
                                     "coords": block.relative_coordinates,
                                 }
                             ],
-                        },
-                        parent=last_section.uuid,
+                        }
                     )
-                    last_section.add_node(table_node)
-                    TableTools(table_node).parse_table()
+                elif block.type == "Table":
+                    imgs = ImageContainer(path, bulk_render=False)
+                    img = imgs[i]
+                    cropped_img = img.crop(block.coords)
+                    nodes[-1]["children"].append(
+                        {
+                            "type": "table",
+                            "icon": "table",
+                            "path": path,
+                            "content": [
+                                {
+                                    "value": None,
+                                    "page": i,
+                                    "coords": block.relative_coordinates,
+                                }
+                            ],
+                            "table": img_2_table(cropped_img)
+                        }
+                    )
             
             i+=1
             self.info.remove(m)
@@ -655,13 +630,15 @@ class AutoTools(MyTab):
             self.info.add(m)
         self.info.remove(m)
         if self.to_txt.value:
-            fname = f"{'.'.join(str(self.node._path).split('.')[:-1])}_output.json"
+            fname = path.with_suffix("_output.json")
             m = f"Writing to: {fname}"
             self.info.add(m)
             with open(fname, "w") as f:
-                json.dump([c._to_dict() for c in root.nodes], f)
+                json.dump(nodes, f)
             self.info.remove(m)
-
+        else:
+            self.node.controller.insert_nested_dicts(nodes, parent_id=str(path))
+        
         if isinstance(btn, Button):
             btn.disabled = False
 
@@ -705,8 +682,8 @@ class TableTools(MyTab):
 
     def set_node(self, node):
         super().set_node(node)
-        if "table" in self.node.metadata:
-            rows = self.node.metadata["table"]
+        if "table" in self.node.data:
+            rows = self.node.data["table"]
             df = pd.DataFrame(rows)
             self.children = [
                 VBox(
@@ -720,14 +697,14 @@ class TableTools(MyTab):
             self.children = [self.parse_table_btn, self.delete_btn]
 
     def parse_table(self, _=None):
-        path = self.node._path
+        path = file_path(self.node)
         imgs = ImageContainer(path, bulk_render=False)
-        img = imgs[self.node.content[0]["page"]]
-        coords = self.node.content[0]["coords"]
+        img = imgs[self.node.data['content'][0]["page"]]
+        coords = self.node.data['content'][0]["coords"]
 
         cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
         rows = img_2_table(cropped_img)
-        self.node.metadata["table"] = rows
+        self.node.data["table"] = rows
 
         # Refresh the tab to show the table
         self.set_node(self.node)
