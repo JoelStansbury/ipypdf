@@ -1,0 +1,84 @@
+name: ipypdf
+
+icon:
+description: |
+  Jupyter widgets for parsing structured data from PDF documents
+
+variables:
+  MAX_LINE_LENGTH: 99
+
+commands:
+  setup:
+    env_spec: developer
+    description: setup development environment
+    unix: |
+      pip install -e . --no-deps
+    windows: |
+      pip install -e . --no-deps
+
+  lab:
+    env_spec: developer
+    description: run the notebooks
+    windows: |
+      python scripts/find_tessdata.py & jupyter lab notebooks/
+
+  lint:
+    env_spec: developer
+    description: lint the code
+    unix: |
+      isort .
+      black src/ tests/ -l {{MAX_LINE_LENGTH}}
+      flake8 src/
+      pylint src/ --rcfile=.pylintrc
+    windows: |
+      isort . & black src/ tests/ -l {{MAX_LINE_LENGTH}} & flake8 src/ tests/ & pylint src/ tests/ --rcfile=.pylintrc
+  
+  upload:
+    env_spec: developer
+    description: build and upload package to pip
+    windows: |
+      python -m build && python -m twine upload --repository pypi dist/*
+
+channels:
+- conda-forge
+- nodefaults
+
+env_specs:
+  user:
+    packages:
+    - pip
+    - python
+    - python
+    - pywin32
+    - poppler
+    - spacy
+    - ipycanvas
+    - ipycytoscape
+    - ipyevents
+    - ipywidgets
+    - ipytree
+    - jupyterlab >=3.0
+    - numpy <=1.19.3,>=1.13
+    - matplotlib
+    - opencv
+    - pandas
+    - pdf2image
+    - pytesseract
+    - tesseract
+    - traitlets
+  developer:
+    inherit_from:
+    - user
+    packages:
+    - black
+    - flake8
+    - isort
+    - pylint
+    - pytest
+    - pytest-cov
+    - build
+    - twine
+platforms:
+- linux-64
+- osx-64
+- win-64

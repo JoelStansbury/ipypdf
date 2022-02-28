@@ -1,7 +1,8 @@
+from pathlib import Path
 from platform import python_version
+
 from setuptools import setup
 
-from pathlib import Path
 HERE = Path(__file__).parent
 long_description = (HERE / "README.md").read_text()
 

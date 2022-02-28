@@ -1,0 +1,9 @@
+name: ipypdf-ci
+
+channels:
+  - https://conda.anaconda.org/conda-forge
+
+dependencies:
+  - anaconda-project =0.10.1
+  - pip
+  - python
