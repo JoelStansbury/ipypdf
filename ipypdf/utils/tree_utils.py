@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 def file_path(node):
     tree = node.controller
@@ -28,3 +29,24 @@ def select_by_id(tree, node_id):
 def immediate_children(node):
     tree = node.controller
     return [tree.registry[node_id] for node_id in node.data["children"]]
+
+def to_dict(node):
+    tree = node.controller
+    data = []
+    for x in tree.dfs(node.id):
+        if x.id == node.id:
+            pass
+        else:
+            data.append(x.to_dict())
+
+    return data
+
+def load_from_json(path, parent):
+    tree = parent.controller
+    with open(path, 'r') as f:
+        data = json.load(f)
+    if isinstance(data, list):
+        if all(['id' in x for x in data]):
+            tree.add_multiple(data, parent.id)
+        else:
+            tree.insert_nested_dicts(data, parent.id)

@@ -5,7 +5,7 @@ import ipywidgets as ipyw
 import pytesseract as tess
 
 from .style.style import CSS
-from .utils.tree_utils import file_path
+from .utils.tree_utils import file_path, to_dict, load_from_json
 from .utils.image_utils import (
     ImageContainer,
     canvas_2_rel,
@@ -55,13 +55,11 @@ class App(ipyw.HBox):
         self.tree = Tree()
         self.tree.rglob(indir, "*.pdf")
 
-        for p in list(self.tree.registry.keys()):
+        for p,node in list(self.tree.registry.items()):
             if Path(p).suffix.lower() == '.pdf':
                 json_file = Path(p).with_suffix('.json')
                 if json_file.exists():
-                    with open(json_file, 'r') as f:
-                        nodes = json.load(f)
-                    self.tree.insert_nested_dicts(nodes, parent_id=p)
+                    load_from_json(json_file, parent=node)
 
 
         self.tree_visualizer = TreeWidget(self.tree, height=30)
@@ -223,6 +221,9 @@ class App(ipyw.HBox):
         self.active_node.data['content'].append(item)
 
     def save(self, _=None):
-        for path, data in self.root.to_dict().items():
-            with path.with_suffix(".json").open(mode="w") as f:
-                json.dump(data, f)
+        for id, node in self.tree.registry.items():
+            if Path(id).exists():
+                data = to_dict(node)
+                if data:
+                    with Path(id).with_suffix(".json").open(mode="w") as f:
+                        json.dump(data, f)

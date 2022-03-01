@@ -38,7 +38,7 @@ class Node:
         self.data = data if data else {}
         self.data['children'] = self.data.get('children',[])
         self.id = self.data.get("id", str(uuid1()))
-        self.parent = self.data.get("parent", None)
+        # self.parent = self.data.get("parent", None)
         self.opened = False
         self.selected = False
     
@@ -47,7 +47,6 @@ class Node:
     
     def to_dict(self):
         self.data["id"] = self.id
-        self.data["parent"] = self.parent
         self.data["children"] = self.data['children']
         return self.data
 
@@ -158,18 +157,32 @@ class Tree:
         parent:Union[str, Node] = 'root'
     ):
         """
-        Assumes all parent and children relationships are compatible
+        If a node is not present in any of the other provided
+        nodes' "children" list, then it is considered an orphan and placed
+        directly beneath `parent` (default: 'root').
+
+        every node in `node_list` is required to have a 'children' attribute
         """
         parent = self._handle_type(parent)
         node_list = [
             self._handle_type(node, allow_creation=True)
             for node in node_list
         ]
+
+        ids = set([x.id for x in node_list])
+        children = set(sum([x.data['children'] for x in node_list],[]) )
+        orphans = ids - children
+
+        for o in orphans:
+            parent.data['children'].append(o)
+
         for node in node_list:
+            node.parent = parent.id
             self.registry[node.id] = node
-        for node in node_list:
-            if node.parent is None:
-                self._set_parent(node, parent)
+
+        for id, node in self.registry.items():
+            for c in node.data['children']:
+                self.registry[c].parent = id
         self._housekeeping()
     
     def move(
@@ -195,13 +208,14 @@ class Tree:
         parent_id:str='root',
         children_key:str='children',
     ):
-        node_data['parent'] = parent_id
+        # node_data['parent'] = parent_id
         if children_key in node_data:
             children_list = node_data.pop(children_key)
         else:
             children_list = []
         node_data["children"]=[]
-        node = Node(node_data)
+        node = Node(node_data)  # get or create node.id
+        node.parent = parent_id
         self.registry[parent_id].data['children'].append(node.id)
         self.registry[node.id] = node
         for child in children_list:
@@ -283,8 +297,8 @@ class Tree:
         result = []
         for node in self.dfs(node_id):
             d = node.to_dict()
-            if d["parent"] == node_id:
-                d["parent"] = None
+            # if d["parent"] == node_id:
+            #     d["parent"] = None
             result.append(d)
         return result
 
@@ -297,6 +311,7 @@ class Tree:
         self.registry = {'root':self.root}
         self.root.data['label'] = str(root)
         self.root.data['icon'] = 'folder'
+        self.root.data['type'] = 'folder'
 
         icons = {
             'pdf':'file-pdf',
@@ -334,7 +349,6 @@ class Tree:
                             'children':[],
                             'icon':icon,
                             'type':_type,
-                            'path':str(_id)
                         }
                     )
                 cursor = [x for x in cursor["children"] if x['label'] == part][0]

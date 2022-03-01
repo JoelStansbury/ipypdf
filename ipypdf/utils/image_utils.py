@@ -82,10 +82,6 @@ def rel_2_cv2(rel_coords, w, h):
 class ImageContainer:
     def __init__(self, fname, bulk_render=True, dpi=200):
         fname = Path(fname)
-        parent = fname.parent
-        filename = ''.join(fname.parts[-1].split('.')[:-1])
-        self.imgdir = parent / (filename + "_imgs")
-        self.imgdir.mkdir(exist_ok=True)
 
         self.info = pdfinfo_from_path(str(fname))
         self.bulk_render = bulk_render
@@ -96,16 +92,11 @@ class ImageContainer:
             self.fname = str(fname)
 
     def __getitem__(self, i):
-        im_filename = f"{self.imgdir}/{i}.png"
-        if Path(im_filename).exists():
-            return Image.open(im_filename)
+        if self.bulk_render:
+            return self.imgs[i]
         else:
-            if self.bulk_render:
-                img = self.imgs[i]
-            else:
-                # manual page indexing starts at 1
-                img = convert_from_path(
-                    str(self.fname), first_page=i + 1, last_page=i + 1, dpi=self.dpi
-                )[0]
-            img.save(im_filename)
-            return img
+            # manual page indexing starts at 1
+            img = convert_from_path(
+                str(self.fname), first_page=i + 1, last_page=i + 1, dpi=self.dpi
+            )[0]
+        return img
