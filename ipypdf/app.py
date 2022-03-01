@@ -5,6 +5,7 @@ import ipywidgets as ipyw
 import pytesseract as tess
 
 from .style.style import CSS
+from .utils.tree_utils import file_path
 from .utils.image_utils import (
     ImageContainer,
     canvas_2_rel,
@@ -61,8 +62,6 @@ class App(ipyw.HBox):
                     with open(json_file, 'r') as f:
                         nodes = json.load(f)
                     self.tree.insert_nested_dicts(nodes, parent_id=p)
-                    for node in self.tree.dfs(p):
-                        node.data['path'] = p
 
 
         self.tree_visualizer = TreeWidget(self.tree, height=30)
@@ -115,7 +114,7 @@ class App(ipyw.HBox):
 
             self.active_node = node
             self.selection_pipe = self.SELECTION_PIPES.get(node.data['type'], None)
-            fname = Path(node.data['path'])
+            fname = file_path(node)
             self.node_detail.set_node(node)
 
             if fname.suffix.lower() == ".pdf":
@@ -187,14 +186,15 @@ class App(ipyw.HBox):
         w = self.scaling_factor * self.full_img.width
         h = self.scaling_factor * self.full_img.height
         self.selection_pipe(canvas_2_rel(self.canvas.rect, w, h))
+        self.node_detail.set_node(self.active_node)
 
     def handle_image(self, rel_coords):
-        self.active_node.add_content(
+        self.active_node.data['content'].append(
             {"value": None, "page": self.img_index, "coords": rel_coords}
         )
 
     def handle_table(self, rel_coords):
-        self.active_node.add_content(
+        self.active_node.data['content'].append(
             {"value": None, "page": self.img_index, "coords": rel_coords}
         )
 
@@ -220,7 +220,7 @@ class App(ipyw.HBox):
         )
 
         item = {"value": text, "page": self.img_index, "coords": rel_coords}
-        self.active_node.add_content(item)
+        self.active_node.data['content'].append(item)
 
     def save(self, _=None):
         for path, data in self.root.to_dict().items():

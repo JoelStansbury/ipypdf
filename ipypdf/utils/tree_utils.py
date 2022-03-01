@@ -14,3 +14,17 @@ def stringify(node):
             for c in n.data['content']:
                 result.append(c['value'])
     return ' '.join(result)
+
+
+def select(node):
+    tree = node.controller
+    select_by_id(tree, node.id)
+
+def select_by_id(tree, node_id):
+    w = tree.widget
+    w._select_callback(node_id)
+    w.goto_node(node_id)
+
+def immediate_children(node):
+    tree = node.controller
+    return [tree.registry[node_id] for node_id in node.data["children"]]

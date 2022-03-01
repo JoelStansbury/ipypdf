@@ -36,12 +36,11 @@ from ..utils.image_utils import (
     rel_2_pil,
 )
 from ..utils.nlp import tfidf_similarity
-from ..utils.tree_utils import file_path, stringify
+from ..utils.tree_utils import file_path, stringify, select, immediate_children, select_by_id
 from ..utils.table_extraction import img_2_table
 from ..utils.tess_utils import get_text_blocks
 from ..utils.lp_util import parse_layout
 from .dataframe_widget import DataFrame
-from .doc_tree import NODE_REGISTER, MyNode
 
 NODE_KWARGS = {
     "folder": [0, 5],
@@ -128,18 +127,20 @@ class MyTab(HBox):
         new_node = {
             "type": self._types[btn],
             "children": [],
+            "content": [],
         }
-        self.node.controller.insert(new_node, self.node.id)
+        node = self.node.controller.insert(new_node, self.node.id)
+        select(node)
 
     def set_node(self, node):
         self.node = node
 
     def delete_node(self, _):
+        tree = self.node.controller
         if self.node.data['type'] == "pdf":
-            for node in self.node.nodes:
-                node.delete()
+            tree.remove_children(self.node)
         else:
-            self.node.delete()
+            tree.remove(self.node)
 
 
 class SubsectionTools(MyTab):
@@ -205,13 +206,11 @@ class SpacyInsights(MyTab):
             self.refresh_btn = SmallButton("refresh","Refresh Tables",self.refresh)
             self.utils = HBox([self.refresh_btn])
         except OSError:
-            self.utils = [
-                ScriptAction(
-                    message="Spacy en_core_web_lg is required to use this toolkit",
-                    args=["spacy","download","en_core_web_lg"],
-                    callback=self._init
-                )
-            ]
+            self.utils = ScriptAction(
+                message="Spacy en_core_web_lg is required to use this toolkit",
+                args=["spacy","download","en_core_web_lg"],
+                callback=self._init
+            )
         
     def set_node(self, node):
         super().set_node(node)
@@ -278,8 +277,10 @@ class Cytoscape(MyTab):
         ]
 
     def on_node_click(self, event):
-        self.node.selected = False
-        NODE_REGISTER[event["data"]["id"]].selected = True  # TODO: fix this
+        node = self.node.controller.registry[event["data"]["id"]]
+        select(node)
+        # self.node.selected = False
+        # NODE_REGISTER[event["data"]["id"]].selected = True  # TODO: fix this
 
     def refresh(self, _=None):
 
@@ -297,9 +298,9 @@ class Cytoscape(MyTab):
         if self.config_btn_recursive.value:
             gen = self.node.controller.dfs(self.node.id)
             next(gen)  # skip first
-            docs = {node: stringify(node) for node in gen}
+            docs = {node: stringify(node) for node in gen if node.data['type'] == 'section'}
         else:
-            docs = {node: stringify(node) for node in self.node.nodes}
+            docs = {node: stringify(node) for node in immediate_children(self.node)}
 
         for doc, v in list(docs.items()):
             if v == "":
@@ -418,7 +419,9 @@ class Cytoscape(MyTab):
         )
     
     def export_edge_list(self, _=None):
-        path = file_path(self.node).with_suffix("_edgelist.csv")
+        path = str(file_path(self.node))
+        path = ".".join(path.split(".")[:-1])
+        path = path + '_edgelist.csv'
         with open(path, 'w') as f:
             f.write(
                 "\n".join(
@@ -438,7 +441,10 @@ class AutoTools(MyTab):
         # ---------------------- Options ----------------------
         self.to_txt = Checkbox(description="Export directly to txt file (needed for large docs)", value=False)
         def warn(e):
-            m = f"Warning: output is being piped to {file_path(self.node).with_suffix('_output.json')}"
+            fname = str(file_path(self.node))
+            fname = ".".join(fname.split(".")[:-1])
+            fname = fname + '_output.json'
+            m = f"Warning: output is being piped to {fname}"
             if e["new"]:
                 self.info.add(m,1)
                 # self.layoutparser_btn.disabled = True
@@ -525,7 +531,9 @@ class AutoTools(MyTab):
         self.info.remove(m)
 
         if self.to_txt.value:
-            fname = path.with_suffix("_output.json")
+            fname = str(file_path(self.node))
+            fname = ".".join(fname.split(".")[:-1])
+            fname = fname + '_output.json'
             m = f"Writing to: {fname}"
             self.info.add(m)
             with open(fname, "w") as f:
@@ -579,12 +587,8 @@ class AutoTools(MyTab):
                             "icon": "align-left",
                             "content": [
                                 {
-                                    "value": block.text, 
-                                        "value": block.text, 
-                                    "value": block.text, 
-                                    "page": i, 
-                                        "page": i, 
-                                    "page": i, 
+                                    "value": block.text,
+                                    "page": i,
                                     "coords": block.relative_coordinates
                                 }
                             ],
@@ -607,7 +611,7 @@ class AutoTools(MyTab):
                 elif block.type == "Table":
                     imgs = ImageContainer(path, bulk_render=False)
                     img = imgs[i]
-                    cropped_img = img.crop(block.coords)
+                    cropped_img = img.crop(block.coordinates)
                     nodes[-1]["children"].append(
                         {
                             "type": "table",
@@ -630,7 +634,9 @@ class AutoTools(MyTab):
             self.info.add(m)
         self.info.remove(m)
         if self.to_txt.value:
-            fname = path.with_suffix("_output.json")
+            fname = str(file_path(self.node))
+            fname = ".".join(fname.split(".")[:-1])
+            fname = fname + '_output.json'
             m = f"Writing to: {fname}"
             self.info.add(m)
             with open(fname, "w") as f:
