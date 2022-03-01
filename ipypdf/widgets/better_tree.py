@@ -109,6 +109,8 @@ class Tree:
         self.onchange_todos.append(function)
     
     def _do_onchange(self):
+        if self.widget:
+            self.widget.compute_visible()
         for f in self.onchange_todos:
             f()
 
@@ -393,6 +395,7 @@ class TreeWidget(ipyw.VBox):
         self.last_scroll_time = time.time()
 
         self._collapse_all()
+        self.compute_visible()
         self.refresh()
 
     def _collapse_all(self):
@@ -415,12 +418,15 @@ class TreeWidget(ipyw.VBox):
                 collector += self._compute_visible(c)
         return collector
     
-    def _compute_inview(self):
+    def compute_visible(self):
         self._visible = self._compute_visible()
+    
+    def _compute_inview(self):
         return self._visible[self.cursor : self.cursor+self.height]
 
     def _open_callback(self, id, value):
         self.tree.registry[id].opened = value
+        self.compute_visible()
         self.refresh()
         
     def _select_callback(self, id):
@@ -528,7 +534,7 @@ class NodeWidget(ipyw.HBox):
         self._open_callback(self.id, self.opened)
         
     def select(self, _=None):
-        self.button.add_class("better-tree-selected")
+        # self.button.add_class("better-tree-selected")
         self._select_callback(self.id)
         
     def load(self, node):

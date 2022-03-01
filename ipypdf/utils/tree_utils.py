@@ -4,6 +4,8 @@ import json
 def file_path(node):
     tree = node.controller
     while '.pdf' not in node.id.lower():
+        if node.id == 'root':
+            return None
         node = tree.parent_of(node)
     return Path(node.id)
 

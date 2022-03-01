@@ -115,7 +115,7 @@ class App(ipyw.HBox):
             fname = file_path(node)
             self.node_detail.set_node(node)
 
-            if fname.suffix.lower() == ".pdf":
+            if fname is not None and fname.suffix.lower() == ".pdf":
                 if fname != self.fname:
                     self.imgs = ImageContainer(
                         fname, bulk_render=self.bulk_render
@@ -222,7 +222,7 @@ class App(ipyw.HBox):
 
     def save(self, _=None):
         for id, node in self.tree.registry.items():
-            if Path(id).exists():
+            if Path(id).exists() and Path(id).suffix.lower() == ".pdf":
                 data = to_dict(node)
                 if data:
                     with Path(id).with_suffix(".json").open(mode="w") as f:

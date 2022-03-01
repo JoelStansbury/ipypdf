@@ -616,7 +616,6 @@ class AutoTools(MyTab):
                         {
                             "type": "table",
                             "icon": "table",
-                            "path": path,
                             "content": [
                                 {
                                     "value": None,
