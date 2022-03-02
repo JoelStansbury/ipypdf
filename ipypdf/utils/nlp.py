@@ -54,7 +54,7 @@ def tfidf_similarity(docs: dict):
         if v == "":
             n_docs.pop(k)
 
-    MIN_DF_COUNT = 5
+    MIN_DF_COUNT = 2
     MAX_DF_COUNT = len(n_docs) * 0.8
 
     df = defaultdict(int)

@@ -327,7 +327,7 @@ class Cytoscape(MyTab):
         )  # [x.split(":")[1] for x in mcolors.TABLEAU_COLORS]
         shuffle(colors)
 
-        files = set([file_path(x[0]) for x in sim])
+        files = set([file_path(x[0]) for x in sim] + [file_path(x[1]) for x in sim])
         cmap = {k: colors[i] for i, k in enumerate(files)}
 
         g_edges = []
