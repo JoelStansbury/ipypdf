@@ -45,7 +45,7 @@ from .dataframe_widget import DataFrame
 NODE_KWARGS = {
     "folder": [0, 5],
     "pdf": [6, 1, 5, 4],
-    "section": [1, 5],
+    "section": [1, 5, 4],
     "text": [3, 4],
     "image": [2],
     "table": [7],
@@ -68,6 +68,7 @@ TESS_DESC = ('Text Extraction uses <a href="'
     + "on a much more diverse dataset.")
 
 NAVIGATOR = None
+
 class NodeDetail(Tab):
     def __init__(self, node, nav_hook):
         super().__init__()
@@ -232,7 +233,7 @@ class SpacyInsights(MyTab):
         for k, v in ents.items():
             ent_rows.append({"Entity": k[0], "Label": k[1], "Count": v})
         ent_rows.sort(key=lambda x: x["Count"], reverse=True)
-        self.node.ents = ent_rows
+        self.node.data['spacy-ents'] = ent_rows
         ents = pd.DataFrame(ent_rows)
         token_df = pd.DataFrame(
             [
@@ -438,29 +439,14 @@ class AutoTools(MyTab):
         self.node = node
         self.info = Warnings()
 
-        # ---------------------- Options ----------------------
-        self.to_txt = Checkbox(description="Export directly to txt file (needed for large docs)", value=False)
-        def warn(e):
-            fname = str(file_path(self.node))
-            fname = ".".join(fname.split(".")[:-1])
-            fname = fname + '_output.json'
-            m = f"Warning: output is being piped to {fname}"
-            if e["new"]:
-                self.info.add(m,1)
-                # self.layoutparser_btn.disabled = True
-                # self.layoutparser_btn.tooltip = "Layout direct to text is not yet supported"
-            else:
-                self.info.remove(m)
-                # self.layoutparser_btn.disabled = False
-                # self.layoutparser_btn.tooltip = "Send each page through the LayoutParser pipeline"
+        # ---------------------- Settings ----------------------
             
-
-        self.to_txt.observe(
-            warn,
-            names="value"
-        )
         
-        self.settings = VBox([self.to_txt])
+        self.settings = VBox(
+            [
+                # No Settings Yet
+            ]
+        )
         
 
         # --------------------- Tesseract ---------------------
@@ -529,19 +515,7 @@ class AutoTools(MyTab):
                 if tb["value"]:
                     text_node['content'].append(tb)
         self.info.remove(m)
-
-        if self.to_txt.value:
-            fname = str(file_path(self.node))
-            fname = ".".join(fname.split(".")[:-1])
-            fname = fname + '_output.json'
-            m = f"Writing to: {fname}"
-            self.info.add(m)
-            with open(fname, "w") as f:
-                # using _to_dict here because to_dict only works for directories
-                json.dump(text_node, f)
-            self.info.remove(m)
-        else:
-            self.node.controller.insert(text_node, self.node.id)
+        self.node.controller.insert(text_node, self.node.id)
 
         if isinstance(btn, Button):
             btn.disabled = False
@@ -554,6 +528,7 @@ class AutoTools(MyTab):
 
 
         nodes = []
+        place_non_section_nodes_in = nodes
 
         i=0
         total = ImageContainer(path, bulk_render=False).info['Pages']
@@ -561,7 +536,6 @@ class AutoTools(MyTab):
         self.info.add(m)
 
         for layout in parse_layout(path, self.lp_model):
-
             for block in layout:
 
                 if block.type == "Title":
@@ -580,8 +554,9 @@ class AutoTools(MyTab):
                             "children": []
                         },
                     )
+                    place_non_section_nodes_in = nodes[-1]['children']
                 elif block.type in ["List", "Text"]:
-                    nodes[-1]["children"].append(
+                    place_non_section_nodes_in.append(
                         {
                             "type": "text",
                             "icon": "align-left",
@@ -595,7 +570,7 @@ class AutoTools(MyTab):
                         },
                     )
                 elif block.type == "Figure":
-                    nodes[-1]["children"].append(
+                    place_non_section_nodes_in.append(
                         {
                             "type": "image",
                             "icon": "image",
@@ -612,7 +587,7 @@ class AutoTools(MyTab):
                     imgs = ImageContainer(path, bulk_render=False)
                     img = imgs[i]
                     cropped_img = img.crop(block.coordinates)
-                    nodes[-1]["children"].append(
+                    place_non_section_nodes_in.append(
                         {
                             "type": "table",
                             "icon": "table",
@@ -632,17 +607,7 @@ class AutoTools(MyTab):
             m = f"Parsing Layout: {i+1}/{total}"
             self.info.add(m)
         self.info.remove(m)
-        if self.to_txt.value:
-            fname = str(file_path(self.node))
-            fname = ".".join(fname.split(".")[:-1])
-            fname = fname + '_output.json'
-            m = f"Writing to: {fname}"
-            self.info.add(m)
-            with open(fname, "w") as f:
-                json.dump(nodes, f)
-            self.info.remove(m)
-        else:
-            self.node.controller.insert_nested_dicts(nodes, parent_id=str(path))
+        self.node.controller.insert_nested_dicts(nodes, parent_id=str(path))
         
         if isinstance(btn, Button):
             btn.disabled = False

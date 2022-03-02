@@ -11,26 +11,28 @@ from typing import Union, List
 
 
 CSS = ipyw.HTML("""
-<style>
-.better-tree-btn {
-    background: transparent;
-    text-align: left;
-}
-.better-tree-small {
-    text-align: center;
-    background: transparent;
-    padding:0;
-	width: 15px;
-}
-.better-tree-selected {
-    background: lightgrey;
-    text-align: left;
-}
-.better-tree-box {
-    height: -webkit-fill-available;
-}
-</style>
-""")
+    <style>
+        .better-tree-btn {
+            background: transparent;
+            text-align: left;
+            width: 100%;
+        }
+        .better-tree-small {
+            text-align: center;
+            background: transparent;
+            padding:0;
+            width: 15px;
+        }
+        .better-tree-selected {
+            background: lightgrey;
+            text-align: left;
+        }
+        .better-tree-box {
+            height: -webkit-fill-available;
+            width: 250px;
+        }
+    </style>
+    """)
 
 
 class Node:
@@ -59,6 +61,7 @@ class Tree:
             are added via `Tree.add_multiple(nodes)`
         """
         self.root = Node({'id':'root', 'label':'root'})
+        self.root.controller = self
         self.root.level=0
         self.registry = {
             'root':self.root
@@ -119,8 +122,8 @@ class Tree:
             node.controller = self
 
     def _housekeeping(self):
-        self._validate()
-        self._set_controller()
+        # self._validate()
+        # self._set_controller()
         self._compute_depth()
         self._do_onchange()
 
@@ -143,6 +146,7 @@ class Tree:
         set parent to 'root' if it is None
         """
         node = self._handle_type(node, allow_creation=True)
+        node.controller = self
         assert node.id not in self.registry, "that id is already in use"
         self.registry[node.id] = node
         if node.parent is None:
@@ -175,11 +179,13 @@ class Tree:
         children = set(sum([x.data['children'] for x in node_list],[]) )
         orphans = ids - children
 
-        for o in orphans:
-            parent.data['children'].append(o)
+        for n in node_list:  # preserve the order of node_list
+            if n.id in orphans:
+                parent.data['children'].append(n.id)
 
         for node in node_list:
             node.parent = parent.id
+            node.controller = self
             self.registry[node.id] = node
 
         for id, node in self.registry.items():
@@ -218,6 +224,7 @@ class Tree:
         node_data["children"]=[]
         node = Node(node_data)  # get or create node.id
         node.parent = parent_id
+        node.controller = self
         self.registry[parent_id].data['children'].append(node.id)
         self.registry[node.id] = node
         for child in children_list:
@@ -243,6 +250,7 @@ class Tree:
     
     def insert(self, node_data, parent_id='root'):
         node = Node(node_data)
+        node.controller = self
         assert node.id not in self.registry
         assert parent_id in self.registry
         self.registry[node.id] = node
@@ -392,6 +400,8 @@ class TreeWidget(ipyw.VBox):
         self.selected_node = None
 
         self.scroll_speed = 1 # set and incrimented in self.scroll
+        self.last_deltaY = 0  # attr for deltaY to prevent trackpad accel
+        self.trackpad_collector = 0
         self.last_scroll_time = time.time()
 
         self._collapse_all()
@@ -462,16 +472,18 @@ class TreeWidget(ipyw.VBox):
         self.refresh()
 
     def event_handler(self, event):
-        # print(event)
+        # TODO: add trackpad detection/option
         if "deltaY" in event:
-            if time.time() - self.last_scroll_time < 0.1:
+            print(event['deltaY'])
+            direction = 1 if event["deltaY"] > 0 else -1
+            if (time.time() - self.last_scroll_time < 0.1):  # Accelerate
+                self.last_deltaY = event['deltaY']
                 self.scroll_speed += 2
-            else:
+                self.last_scroll_time = time.time()
+                self.scroll(self.scroll_speed * direction)
+            else:  # Reset Speed to 1
                 self.scroll_speed = 1
-            self.last_scroll_time = time.time()
-
-            to_scroll = self.scroll_speed if event["deltaY"] > 0 else -self.scroll_speed
-            self.scroll(to_scroll)
+                self.scroll(direction)
 
     def refresh(self):
         inview = self._compute_inview()
