@@ -51,6 +51,10 @@ NODE_KWARGS = {
     "table": [7],
 }
 
+TYPE_ICONS = {
+
+}
+
 LP_DESC = ('Layout Extraction will use <a href="htt'
     + 'ps://github.com/Layout-Parser/layout-parser" '
     + 'style="color:blue;">layoutparser</a> to find'
@@ -542,7 +546,6 @@ class AutoTools(MyTab):
                     nodes.append(
                         {
                             "type": "section",
-                            "icon": "indent",
                             "content": [
                                 {
                                     "value": block.text, 
@@ -559,7 +562,6 @@ class AutoTools(MyTab):
                     place_non_section_nodes_in.append(
                         {
                             "type": "text",
-                            "icon": "align-left",
                             "content": [
                                 {
                                     "value": block.text,
@@ -573,7 +575,6 @@ class AutoTools(MyTab):
                     place_non_section_nodes_in.append(
                         {
                             "type": "image",
-                            "icon": "image",
                             "content": [
                                 {
                                     "value": None,
@@ -590,7 +591,6 @@ class AutoTools(MyTab):
                     place_non_section_nodes_in.append(
                         {
                             "type": "table",
-                            "icon": "table",
                             "content": [
                                 {
                                     "value": None,

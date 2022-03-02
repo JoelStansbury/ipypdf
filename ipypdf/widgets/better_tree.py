@@ -35,6 +35,28 @@ CSS = ipyw.HTML("""
     """)
 
 
+ICONS = {
+    'pdf':'file-pdf',
+    'xlsx':'file-excel',
+    'xlsm':'file-excel',
+    'xls':'file-excel',
+    'csv':'file-csv',
+    'zip':'file-zipper',
+    'gzip':'file-zipper',
+    'tar':'file-zipper',
+    '7z':'file-zipper',
+    'png':'file-image',
+    'jpeg':'file-image',
+    'jpg':'file-image',
+    # Non-extension
+    'folder': 'folder',
+    'text': 'align-left',
+    'table': 'table',
+    'image': 'image',
+    'section': 'indent',
+    
+}
+
 class Node:
     def __init__(self, data):
         self.data = data if data else {}
@@ -320,23 +342,7 @@ class Tree:
         skip = len(root.parts)
         self.registry = {'root':self.root}
         self.root.data['label'] = str(root)
-        self.root.data['icon'] = 'folder'
         self.root.data['type'] = 'folder'
-
-        icons = {
-            'pdf':'file-pdf',
-            'xlsx':'file-excel',
-            'xlsm':'file-excel',
-            'xls':'file-excel',
-            'csv':'file-csv',
-            'zip':'file-zipper',
-            'gzip':'file-zipper',
-            'tar':'file-zipper',
-            '7z':'file-zipper',
-            'png':'file-image',
-            'jpeg':'file-image',
-            'jpg':'file-image',
-        }
 
         nodes = {'children':[]}
         for p in list(root.rglob(pattern)):
@@ -345,19 +351,14 @@ class Tree:
             for part in p.parts[skip:]:
                 _id = _id / part
                 if not part in [x['label'] for x in cursor["children"]]:
-                    icon = 'folder'
                     _type = 'folder'
                     if len(part.split('.'))>1:
-                        icon = 'file'
                         _type = part.split('.')[-1]
-                        if _type in icons:
-                            icon = icons[part.split('.')[-1]]
                     cursor['children'].append(
                         {
                             'id':str(_id),
                             'label':part,
                             'children':[],
-                            'icon':icon,
                             'type':_type,
                         }
                     )
@@ -550,7 +551,7 @@ class NodeWidget(ipyw.HBox):
         self._select_callback(self.id)
         
     def load(self, node):
-        self.button.icon = node.data.get("icon","align-justify")
+        self.button.icon = ICONS.get(node.data['type'],"align-justify")
         self.button.description = node.data.get("label","")
         self.indent_box.value = "&nbsp"*node.level*3
         self.opened = node.opened
