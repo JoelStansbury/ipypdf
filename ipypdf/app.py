@@ -1,21 +1,40 @@
 import json
+from pathlib import Path
 
 import ipywidgets as ipyw
 import pytesseract as tess
 
 from .style.style import CSS
+from .utils.tree_utils import file_path, to_dict, load_from_json
 from .utils.image_utils import (
     ImageContainer,
     canvas_2_rel,
     fit,
     pil_2_widget,
+    rel_2_canvas,
     rel_crop,
     scale,
 )
 from .widgets.canvas import PdfCanvas
 from .widgets.navigation import NavigationToolbar
-from .widgets.doc_tree import TreeWidget
+from .widgets.better_tree import Tree, TreeWidget
 from .widgets.node_tools import NodeDetail
+
+
+
+import cProfile, pstats
+
+def profileit(func):
+    def wrapper(*args, **kwargs):
+        prof = cProfile.Profile()
+        retval = prof.runcall(func, *args, **kwargs)
+        sortby = 'cumulative'
+        ps = pstats.Stats(prof).sort_stats(sortby)
+        ps.print_stats(10)
+        return retval
+
+    return wrapper
+
 
 
 class App(ipyw.HBox):
@@ -32,12 +51,24 @@ class App(ipyw.HBox):
 
         self.navigator = NavigationToolbar()
         self.canvas = PdfCanvas(height=1000)
-        self.tree_visualizer = TreeWidget(indir)
-        self.root = self.tree_visualizer.root
+
+        self.tree = Tree()
+        self.tree.rglob(indir, "*.pdf")
+
+        for p,node in list(self.tree.registry.items()):
+            if Path(p).suffix.lower() == '.pdf':
+                json_file = Path(p).with_suffix('.json')
+                if json_file.exists():
+                    load_from_json(json_file, parent=node)
+
+
+        self.tree_visualizer = TreeWidget(self.tree, height=30)
+        self.root = self.tree.root
         self.node_detail = NodeDetail(self.root, self.navigator)
 
         self.tree_visualizer.observe(
-            self.on_selection_change, "selected_nodes"
+            self.on_selection_change, "selected_id",
+            type="change"
         )
         self.navigator.prev_page_button.on_click(self.prev_page)
         self.navigator.next_page_button.on_click(self.next_page)
@@ -55,7 +86,6 @@ class App(ipyw.HBox):
         }
 
         tree_box = ipyw.VBox([self.tree_visualizer])
-        tree_box.add_class("ipypdf-doc-tree-outter")
 
         self.children = [
             tree_box,
@@ -78,14 +108,14 @@ class App(ipyw.HBox):
         # one and another for selecting the new one. We are concerned with the
         # new node so we ignore the first event by asserting that new is not None.
         if event["new"]:
-            node = event["new"][0]
+            node = self.tree_visualizer.selected_node
 
             self.active_node = node
-            self.selection_pipe = self.SELECTION_PIPES.get(node._type, None)
-            fname = node._path
+            self.selection_pipe = self.SELECTION_PIPES.get(node.data['type'], None)
+            fname = file_path(node)
             self.node_detail.set_node(node)
 
-            if fname.suffix.lower() == ".pdf":
+            if fname is not None and fname.suffix.lower() == ".pdf":
                 if fname != self.fname:
                     self.imgs = ImageContainer(
                         fname, bulk_render=self.bulk_render
@@ -93,9 +123,9 @@ class App(ipyw.HBox):
                     self.n_pages = self.imgs.info["Pages"]
                     self.fname = fname
                 if self.navigator.draw_bboxes.value:
-                    if node.content:
-                        self.img_index = node.content[0]["page"]
-                    if node._type == "pdf":
+                    if node.data.get('content',[]):
+                        self.img_index = node.data['content'][0]["page"]
+                    if node.data['type'] == "pdf":
                         self.img_index = 0
                 self.load()
             else:
@@ -107,14 +137,23 @@ class App(ipyw.HBox):
     def redraw_boxes(self, _=None):
         self.canvas.clear()
         if self.navigator.draw_bboxes.value:
-            bboxes = self.active_node.get_boxes(
-                self.img_index,
-                self.full_img.width * self.scaling_factor,
-                self.full_img.height * self.scaling_factor,
-                True,
-            )
+            bboxes = []
+            for node in self.tree.dfs(self.active_node.id):
+                _type = node.data['type']
+                for c in node.data.get('content',[]):
+                    if c['page'] == self.img_index:
+                        bboxes.append(
+                            (
+                                rel_2_canvas(
+                                    c['coords'],
+                                    self.full_img.width * self.scaling_factor,
+                                    self.full_img.height * self.scaling_factor,
+                                ),
+                                _type
+                            )
+                        )
             self.canvas.draw_many(bboxes)
-        self.canvas.set_type(self.active_node._type)
+        self.canvas.set_type(self.active_node.data['type'])
 
     def next_page(self, _=None):
         if self.img_index < self.n_pages - 1:
@@ -145,14 +184,15 @@ class App(ipyw.HBox):
         w = self.scaling_factor * self.full_img.width
         h = self.scaling_factor * self.full_img.height
         self.selection_pipe(canvas_2_rel(self.canvas.rect, w, h))
+        self.node_detail.set_node(self.active_node)
 
     def handle_image(self, rel_coords):
-        self.active_node.add_content(
+        self.active_node.data['content'].append(
             {"value": None, "page": self.img_index, "coords": rel_coords}
         )
 
     def handle_table(self, rel_coords):
-        self.active_node.add_content(
+        self.active_node.data['content'].append(
             {"value": None, "page": self.img_index, "coords": rel_coords}
         )
 
@@ -168,7 +208,7 @@ class App(ipyw.HBox):
             "page": self.img_index,
             "coords": rel_coords,
         }
-        selected_node.content = [item]
+        selected_node.data['content'] = [item]
         self.redraw_boxes()
 
     def handle_textblock(self, rel_coords):
@@ -178,9 +218,12 @@ class App(ipyw.HBox):
         )
 
         item = {"value": text, "page": self.img_index, "coords": rel_coords}
-        self.active_node.add_content(item)
+        self.active_node.data['content'].append(item)
 
     def save(self, _=None):
-        for path, data in self.root.to_dict().items():
-            with path.with_suffix(".json").open(mode="w") as f:
-                json.dump(data, f)
+        for id, node in self.tree.registry.items():
+            if Path(id).exists() and Path(id).suffix.lower() == ".pdf":
+                data = to_dict(node)
+                if data:
+                    with Path(id).with_suffix(".json").open(mode="w") as f:
+                        json.dump(data, f)

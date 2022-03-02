@@ -22,9 +22,9 @@ def app():
 
 @pytest.fixture()
 def root_node(app):
-    return app.tree_visualizer.root
+    return app.tree.root
 
 
 @pytest.fixture()
-def pdf_nodes(root_node):
-    return [x for x in root_node.dfs() if x._type == "pdf"]
+def pdf_nodes(app):
+    return [x for x in app.tree.dfs() if x.data['type'] == "pdf"]

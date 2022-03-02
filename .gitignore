@@ -10,3 +10,6 @@ pdfs
 .coverage
 junit.xml
 dist
+large_pdfs
+*.csv
+*.json

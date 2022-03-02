@@ -166,9 +166,9 @@ class _Content(VBox):
         """Controls the highlighting of rows"""
         old = change["old"]
         new = change["new"]
-        if old != -1:
+        if old != -1 and old < len(self.rows):
             self.rows[old].remove_class("row_hover")
-        if new != -1:
+        if new != -1 and new < len(self.rows):
             self.rows[new].add_class("row_hover")
 
     def on_hover(self, event):
@@ -204,7 +204,7 @@ class _Content(VBox):
         for k in range(i, j):
             x = min(self.idx + k, N - 1)
             self.rows[k].update(self.records[x])
-        self.children = [self.rows[i] for i in range(self.to_show)]
+        self.children = [self.rows[i] for i in range(min(self.to_show, len(self.rows)))]
 
     def event_handler(self, event):
         # print(event)
