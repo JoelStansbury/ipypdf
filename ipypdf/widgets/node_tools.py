@@ -284,7 +284,7 @@ class Cytoscape(MyTab):
         # NODE_REGISTER[event["data"]["id"]].selected = True  # TODO: fix this
 
     def refresh(self, _=None):
-
+        self.computed_file_path = file_path(self.node)
         self.children = [
             VBox(
                 [
@@ -420,9 +420,12 @@ class Cytoscape(MyTab):
         )
     
     def export_edge_list(self, _=None):
-        path = str(file_path(self.node))
-        path = ".".join(path.split(".")[:-1])
-        path = path + '_edgelist.csv'
+        path = self.computed_file_path
+        if path.is_file():
+            path = ".".join(str(path).split(".")[:-1])
+            path = path + '_edgelist.csv'
+        else:
+            path = str(path) + '_edgelist.csv'
         with open(path, 'w') as f:
             f.write(
                 "\n".join(

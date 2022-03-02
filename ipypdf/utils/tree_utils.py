@@ -2,6 +2,10 @@ from pathlib import Path
 import json
 
 def file_path(node):
+    if node.id == 'root':
+        return Path(node.data['label'])
+    if node.data["type"] == "folder":
+        return Path(node.id)
     tree = node.controller
     while '.pdf' not in node.id.lower():
         if node.id == 'root':
