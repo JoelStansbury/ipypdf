@@ -51,10 +51,6 @@ NODE_KWARGS = {
     "table": [7],
 }
 
-TYPE_ICONS = {
-
-}
-
 LP_DESC = ('Layout Extraction will use <a href="htt'
     + 'ps://github.com/Layout-Parser/layout-parser" '
     + 'style="color:blue;">layoutparser</a> to find'
