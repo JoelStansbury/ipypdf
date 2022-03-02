@@ -46,7 +46,7 @@ class Node:
     
     def __repr__(self):
         return self.data["label"]
-    
+        
     def to_dict(self):
         self.data["id"] = self.id
         self.data["children"] = self.data['children']
@@ -372,7 +372,7 @@ class Tree:
 
 
 class TreeWidget(ipyw.VBox):
-    selected_id = Unicode('root')
+    selected_id = Unicode(None, allow_none=True)
     def __init__(
         self,
         tree,
