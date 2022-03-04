@@ -20,6 +20,12 @@ pip install numpy==1.19.2
 conda install jupyterlab tesseract -c conda-forge
 python -m pip install ipypdf
 ```
+> If using the latest source code, replace `python -m pip install ipypdf` with
+```bash
+git clone https://github.com/JoelStansbury/ipypdf.git
+cd ipypdf
+pip install -e .
+```
 ### No Conda (not tested)
 
 Install [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
