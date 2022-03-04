@@ -12,9 +12,12 @@ It is highly recommended that you install this into a clean environment.
 to use the `Parse Layout` button, it's best to install this in an empty environment.
 
 ### Conda (recommended)
+> This is the order of operations which worked for me on most recently. Though it could probably be simplified
 ```bash
-conda create -n ipypdf python pip jupyterlab tesseract -c conda-forge
+conda create -n ipypdf python pip
 conda activate ipypdf
+pip install numpy==1.19.2
+conda install jupyterlab tesseract -c conda-forge
 python -m pip install ipypdf
 ```
 ### No Conda (not tested)
