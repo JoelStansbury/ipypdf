@@ -209,6 +209,8 @@ class App(ipyw.HBox):
             "coords": rel_coords,
         }
         selected_node.data['content'] = [item]
+        selected_node.data["label"] = text.strip()
+        self.tree_visualizer.refresh()
         self.redraw_boxes()
 
     def handle_textblock(self, rel_coords):
