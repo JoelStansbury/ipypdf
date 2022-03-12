@@ -34,6 +34,7 @@ CSS = ipyw.HTML(
         }
         .better-tree-node-window {
             height: -webkit-fill-available;
+            width: 250px;
             overflow-x: scroll;
         }
         .better-tree-node-row {
