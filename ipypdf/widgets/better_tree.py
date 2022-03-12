@@ -30,11 +30,11 @@ CSS = ipyw.HTML(
         }
         .better-tree-box {
             height: -webkit-fill-available;
-            width: 250px;
+            width: 300px;
         }
         .better-tree-node-window {
             height: -webkit-fill-available;
-            width: 250px;
+            width: 99%;
             overflow-x: scroll;
         }
         .better-tree-node-row {
