@@ -102,15 +102,19 @@ def tfidf_similarity(docs: dict):
     doc_keys, X = zip(*doc_vectors.items())
     X = array(X)
     sim = [
-        dot(X[i+1:], x) / (norm(X[i+1:], axis=1) * norm(x)) for i,x in enumerate(X)
+        dot(X[i + 1 :], x) / (norm(X[i + 1 :], axis=1) * norm(x))
+        for i, x in enumerate(X)
     ]  # cosine similarity between all other docs
     dr = doc_keys[::-1]
 
     # return a list of source,target,weight pairs
-    return sum([
-        [[key] + list(t_w) for t_w in list(zip(dr, flip(sim_vector)))]
-        for key, sim_vector in zip(doc_keys, sim)
-    ],[])
+    return sum(
+        [
+            [[key] + list(t_w) for t_w in list(zip(dr, flip(sim_vector)))]
+            for key, sim_vector in zip(doc_keys, sim)
+        ],
+        [],
+    )
 
 
 def levenshtein_distance(s, t):

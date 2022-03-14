@@ -15,9 +15,7 @@ def fit(img, w, h):
 def scale(img, factor):
     w_old = img.width
     h_old = img.height
-    return img.resize(
-        size=(int(w_old * factor), int(h_old * factor)), resample=1
-    )
+    return img.resize(size=(int(w_old * factor), int(h_old * factor)), resample=1)
 
 
 def scale_coords(coords, w, h):

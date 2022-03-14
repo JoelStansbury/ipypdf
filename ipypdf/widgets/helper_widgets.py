@@ -10,7 +10,7 @@ import sys
 
 
 def add_classes(widget, classes):
-    if isinstance(classes,(list,tuple)):
+    if isinstance(classes, (list, tuple)):
         for c in classes:
             widget.add_class(c)
     elif isinstance(classes, str):
@@ -41,7 +41,8 @@ class SmallButton(Button):
 
 class ActionRequired(VBox):
     """Red text followed by a HBox of action items"""
-    def __init__(self, message:str, actions:dict, callback=None):
+
+    def __init__(self, message: str, actions: dict, callback=None):
         """
         message <str>: Info to show user about the effect of the button
         actions <dict<str,func>>: Btn description text and function callback for each button
@@ -49,12 +50,12 @@ class ActionRequired(VBox):
         """
         super().__init__()
         btns = []
-        for k,v in actions.items():
+        for k, v in actions.items():
             btns.append(Button(description=k))
             btns[-1].on_click(v)
             if callback:
                 btns[-1].on_click(callback)
-        self.children = [RedText(message),HBox(btns)]
+        self.children = [RedText(message), HBox(btns)]
 
 
 class ScriptAction(VBox):
@@ -65,15 +66,21 @@ class ScriptAction(VBox):
         callback <func>: Do this after any button press
         """
         super().__init__()
-        cmd = [sys.executable, "-m",] + args
+        cmd = [
+            sys.executable,
+            "-m",
+        ] + args
+
         def func(btn):
-            btn.disabled=True
+            btn.disabled = True
             subprocess.check_call(cmd)
+
         actions = {"run": lambda btn: func(btn)}
         self.children = [
             ActionRequired(message, actions, callback),
-            CodeBlock(" ".join(cmd))
+            CodeBlock(" ".join(cmd)),
         ]
+
 
 class Warnings(VBox):
     def __init__(self):
@@ -81,17 +88,17 @@ class Warnings(VBox):
         self._warnings = []
 
     def show(self):
-        self._warnings.sort(key=lambda x:x[1], reverse=True)
-        self.children = [RedText(m) if s else HTML(m) for m,s in self._warnings]
+        self._warnings.sort(key=lambda x: x[1], reverse=True)
+        self.children = [RedText(m) if s else HTML(m) for m, s in self._warnings]
 
     def add(self, message, severity=0):
         self._warnings.append((message, severity))
         self.show()
-    
+
     def remove(self, message):
         self._warnings = [x for x in self._warnings if x[0] != message]
         self.show()
-    
+
     def clear(self):
         self._warnings = []
         self.children = []

@@ -62,9 +62,7 @@ class _ButtonCell(Button):
 class _Row(HBox):
     value = Int(-1).tag(sync=True)
 
-    def __init__(
-        self, data, widths, on_click, style, max_char, _types=None, **kwargs
-    ):
+    def __init__(self, data, widths, on_click, style, max_char, _types=None, **kwargs):
         super().__init__(**kwargs)
         self.add_class(style)
         self.observe(on_click, "value")
@@ -120,15 +118,11 @@ class _Content(VBox):
     def __init__(self, df, to_show, widths, wrap_around, max_char, **kwargs):
         super().__init__(**kwargs)
         self.add_class("content")
-        d = Event(
-            source=self, watched_events=["wheel", "mousemove", "mouseleave"]
-        )
+        d = Event(source=self, watched_events=["wheel", "mousemove", "mouseleave"])
         d.on_dom_event(self.event_handler)
 
         self.to_show = to_show
-        self.num_rows = min(
-            len(df), to_show if to_show % 2 == 0 else to_show + 1
-        )
+        self.num_rows = min(len(df), to_show if to_show % 2 == 0 else to_show + 1)
         self.idx = 0
         self.wrap_around = wrap_around
         self.df = df
@@ -150,7 +144,7 @@ class _Content(VBox):
                 for i in range(self.num_rows)
             ]
         )
-        self.children = list(self.rows)[0: self.to_show]
+        self.children = list(self.rows)[0 : self.to_show]
 
     def update(self, _=None):
         # Need to redo this after sorting ( see _Header.__init__() )
@@ -159,7 +153,7 @@ class _Content(VBox):
         for i in range(self.num_rows):
             idx = self.idx + i
             self.rows[i].update(self.records[idx])
-        self.children = list(self.rows)[0: self.to_show]
+        self.children = list(self.rows)[0 : self.to_show]
 
     @observe("focus_idx")
     def focus(self, change):
@@ -225,9 +219,7 @@ class DataFrame(VBox):
 
     value = Int().tag(sync=True)
 
-    def __init__(
-        self, df, num_rows=10, wrap_around=False, max_char=1000, **kwargs
-    ):
+    def __init__(self, df, num_rows=10, wrap_around=False, max_char=1000, **kwargs):
         super().__init__(**kwargs)
         self.max_char = max_char
 
@@ -268,6 +260,4 @@ class DataFrame(VBox):
         cols = ["Index"] + cols
         total = sum(list(widths.values()))
 
-        return f"{total*ppc}px", [
-            f"{ceil(100*widths[k]/total)}%" for k in cols
-        ]
+        return f"{total*ppc}px", [f"{ceil(100*widths[k]/total)}%" for k in cols]

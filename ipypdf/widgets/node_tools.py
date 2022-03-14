@@ -14,7 +14,9 @@ from ipywidgets import (
     FloatSlider,
     HBox,
     Tab,
+    Text,
     Textarea,
+    ToggleButton,
     VBox,
 )
 from traitlets import List, link, observe
@@ -36,38 +38,50 @@ from ..utils.image_utils import (
     rel_2_pil,
 )
 from ..utils.nlp import tfidf_similarity
-from ..utils.tree_utils import file_path, stringify, select, immediate_children, select_by_id
+from ..utils.tree_utils import (
+    file_path,
+    stringify,
+    select,
+    immediate_children,
+    select_by_id,
+    natural_path,
+)
 from ..utils.table_extraction import img_2_table
 from ..utils.tess_utils import get_text_blocks
 from ..utils.lp_util import parse_layout
 from .dataframe_widget import DataFrame
 
 NODE_KWARGS = {
-    "folder": [0, 5],
-    "pdf": [6, 1, 5, 4],
-    "section": [1, 5, 4],
-    "text": [3, 4],
+    "folder": [0, 5, 8],
+    "pdf": [6, 1, 5, 4, 8],
+    "section": [1, 5, 4, 8],
+    "text": [3, 4, 8],
     "image": [2],
     "table": [7],
 }
 
-LP_DESC = ('Layout Extraction will use <a href="htt'
+LP_DESC = (
+    'Layout Extraction will use <a href="htt'
     + 'ps://github.com/Layout-Parser/layout-parser" '
     + 'style="color:blue;">layoutparser</a> to find'
     + " and label images, tables, titles, and normal text within"
     + " the document. Then, the coordinates of each node are used"
     + ' to predict the "natural order" with which the nodes'
-    + " would be read.")
+    + " would be read."
+)
 
-TESS_DESC = ('Text Extraction uses <a href="'
+TESS_DESC = (
+    'Text Extraction uses <a href="'
     + 'https://github.com/tesseract-ocr/tesseract" '
     + 'style="color:blue;">tesseract</a> to find'
     + " and label textblocks within the document. The order is typically"
     + " more accurate than that of LayoutExtraction. It also tends to "
     + "handle slide shows better than layoutparser as it was trained "
-    + "on a much more diverse dataset.")
+    + "on a much more diverse dataset."
+)
 
 NAVIGATOR = None
+
 
 class NodeDetail(Tab):
     def __init__(self, node, nav_hook):
@@ -85,6 +99,7 @@ class NodeDetail(Tab):
             Cytoscape(node),
             AutoTools(node),
             TableTools(node),
+            Search(node),
             # SectionInsights(node),
             # Summary(node),
         ]
@@ -96,7 +111,8 @@ class NodeDetail(Tab):
             "Spacy",
             "Cytoscape",
             "AutoTools",
-            "TableTools"
+            "TableTools",
+            "Search",
             # "Insights",
             # "Summary",
         ]
@@ -105,7 +121,7 @@ class NodeDetail(Tab):
 
     def set_node(self, node):
         self.node = node
-        indexes = NODE_KWARGS[self.node.data['type']]
+        indexes = NODE_KWARGS[self.node.data["type"]]
         children = []
         for i in indexes:
             children.append(self.tabs[i])
@@ -121,7 +137,12 @@ class MyTab(HBox):
         super().__init__()
         # TODO: when I made this init I thought this would only be run once,
         # that is not the case. Refactor this to only run once.
-        self.delete_btn = SmallButton("trash", "Delete this node and all of its children", self.delete_node,"ipypdf-red")
+        self.delete_btn = SmallButton(
+            "trash",
+            "Delete this node and all of its children",
+            self.delete_node,
+            "ipypdf-red",
+        )
 
     def add_node(self, btn):
         NAVIGATOR.draw_bboxes.value = False
@@ -138,7 +159,7 @@ class MyTab(HBox):
 
     def delete_node(self, _):
         tree = self.node.controller
-        if self.node.data['type'] == "pdf":
+        if self.node.data["type"] == "pdf":
             tree.remove_children(self.node)
         else:
             tree.remove(self.node)
@@ -169,7 +190,9 @@ class ImageTools(MyTab):
         super().__init__()
         self.node = node
 
-        text = SmallButton("align-left", "Add a description for the image", self.add_node)
+        text = SmallButton(
+            "align-left", "Add a description for the image", self.add_node
+        )
 
         self._types = {
             text: "text",
@@ -179,14 +202,13 @@ class ImageTools(MyTab):
 
 
 class TextBlockTools(MyTab):
-
     def __init__(self, node):
         super().__init__()
         self.node = node
 
     def redraw_content(self, _=None):
         self.children = [
-            VBox([Textarea(x["value"]) for x in self.node.data['content']]),
+            VBox([Textarea(x["value"]) for x in self.node.data["content"]]),
             self.delete_btn,
         ]
 
@@ -201,18 +223,18 @@ class SpacyInsights(MyTab):
         self.node = node
         self._init()
 
-    def _init(self,_=None):
+    def _init(self, _=None):
         try:
             self.nlp = spacy.load("en_core_web_lg")
-            self.refresh_btn = SmallButton("refresh","Refresh Tables",self.refresh)
+            self.refresh_btn = SmallButton("refresh", "Refresh Tables", self.refresh)
             self.utils = HBox([self.refresh_btn])
         except OSError:
             self.utils = ScriptAction(
                 message="Spacy en_core_web_lg is required to use this toolkit",
-                args=["spacy","download","en_core_web_lg"],
-                callback=self._init
+                args=["spacy", "download", "en_core_web_lg"],
+                callback=self._init,
             )
-        
+
     def set_node(self, node):
         super().set_node(node)
         self.children = [self.utils]
@@ -220,9 +242,7 @@ class SpacyInsights(MyTab):
         if "spacy-ents" in self.node.data:
             ents = self.node.data["spacy-ents"]
             df = pd.DataFrame(ents)
-            self.children = [
-                VBox([self.utils, DataFrame(df)])
-            ]
+            self.children = [VBox([self.utils, DataFrame(df)])]
 
     def refresh(self, _=None):
         doc = self.nlp(stringify(self.node))
@@ -233,7 +253,7 @@ class SpacyInsights(MyTab):
         for k, v in ents.items():
             ent_rows.append({"Entity": k[0], "Label": k[1], "Count": v})
         ent_rows.sort(key=lambda x: x["Count"], reverse=True)
-        self.node.data['spacy-ents'] = ent_rows
+        self.node.data["spacy-ents"] = ent_rows
         ents = pd.DataFrame(ent_rows)
         token_df = pd.DataFrame(
             [
@@ -248,23 +268,22 @@ class SpacyInsights(MyTab):
             ]
         )
 
-        self.children = [
-            VBox([self.utils, DataFrame(ents), DataFrame(token_df)])
-        ]
+        self.children = [VBox([self.utils, DataFrame(ents), DataFrame(token_df)])]
 
 
 class Cytoscape(MyTab):
     def __init__(self, node):
         super().__init__()
         self.node = node
-        self.refresh_btn = SmallButton("refresh", "Recompute network", self.refresh
-        )
+        self.refresh_btn = SmallButton("refresh", "Recompute network", self.refresh)
         self.slider = FloatSlider(0.4, min=0, max=1)
         self.config_btn_recursive = Checkbox(True, description="Recursive")
         self.config_btn_intradoc = Checkbox(
             True, description="Intra-document connections"
         )
-        self.export_btn = SmallButton("download", "Save edgelist", self.export_edge_list)
+        self.export_btn = SmallButton(
+            "download", "Save edgelist", self.export_edge_list
+        )
         self.children = [
             VBox(
                 [
@@ -299,9 +318,15 @@ class Cytoscape(MyTab):
         if self.config_btn_recursive.value:
             gen = self.node.controller.dfs(self.node.id)
             next(gen)  # skip first
-            docs = {node: stringify(node) for node in gen if node.data['type'] == 'section'}
+            docs = {
+                node: stringify(node) for node in gen if node.data["type"] == "section"
+            }
         else:
-            docs = {node: stringify(node) for node in immediate_children(self.node)}
+            docs = {
+                node: stringify(node)
+                for node in immediate_children(self.node)
+                if node.data["type"] == "section"
+            }
 
         for doc, v in list(docs.items()):
             if v == "":
@@ -334,18 +359,11 @@ class Cytoscape(MyTab):
         self.edges = []
         nodes_with_edges = set()
         for source, target, weight in sim:
-            self.edges.append(
-                [
-                    source.id,
-                    target.id,
-                    weight
-                ]
-            )
+            self.edges.append([source.id, target.id, weight])
             if weight > self.slider.value and source.id != target.id:
 
-                if (
-                    self.config_btn_intradoc.value 
-                    or file_path(source) != file_path(target)
+                if self.config_btn_intradoc.value or file_path(source) != file_path(
+                    target
                 ):
                     nodes_with_edges.add(source)
                     nodes_with_edges.add(target)
@@ -364,7 +382,7 @@ class Cytoscape(MyTab):
                     "data": {
                         "id": node.id,
                         "color": cmap[file_path(node)],
-                        "name": node.data['label'],
+                        "name": node.data.get("label", ""),
                     }
                 }
                 for node in nodes_with_edges
@@ -418,22 +436,16 @@ class Cytoscape(MyTab):
                 },
             ]
         )
-    
+
     def export_edge_list(self, _=None):
         path = self.computed_file_path
         if path.is_file():
             path = ".".join(str(path).split(".")[:-1])
-            path = path + '_edgelist.csv'
+            path = path + "_edgelist.csv"
         else:
-            path = str(path) + '_edgelist.csv'
-        with open(path, 'w') as f:
-            f.write(
-                "\n".join(
-                    [','.join([str(x) for x in e])
-                    for e in self.edges
-                    ]
-                )
-            )
+            path = str(path) + "_edgelist.csv"
+        with open(path, "w") as f:
+            f.write("\n".join([",".join([str(x) for x in e]) for e in self.edges]))
 
 
 class AutoTools(MyTab):
@@ -443,14 +455,12 @@ class AutoTools(MyTab):
         self.info = Warnings()
 
         # ---------------------- Settings ----------------------
-            
-        
+
         self.settings = VBox(
             [
                 # No Settings Yet
             ]
         )
-        
 
         # --------------------- Tesseract ---------------------
         self.tesseract_btn = Button(
@@ -465,12 +475,11 @@ class AutoTools(MyTab):
         self.text_extraction = VBox()
         self.text_extraction.children = [self.te_desc, self.tesseract_btn]
 
-
         # --------------------- LayoutParser ---------------------
         self.layout_extraction = VBox()
         self.layoutparser_btn = Button(
-            description = "Parse Layout",
-            tooltip = "Send each page through the LayoutParser pipeline"
+            description="Parse Layout",
+            tooltip="Send each page through the LayoutParser pipeline",
         )
         self.layoutparser_btn.on_click(self.extract_layout)
 
@@ -494,7 +503,7 @@ class AutoTools(MyTab):
     def extract_text(self, btn=None):
         if isinstance(btn, Button):
             btn.disabled = True
-        text_node ={
+        text_node = {
             "type": "text",
             "parent": self.node.id,
             "children": [],
@@ -502,11 +511,11 @@ class AutoTools(MyTab):
         }
         path = file_path(self.node)
         pages = ImageContainer(path, bulk_render=False).info["Pages"]
-        i=0
+        i = 0
         m = f""
         self.info.add(m)
         for page in get_text_blocks(path):
-            i+=1
+            i += 1
             self.info.remove(m)
             m = f"Extracting Text: Page {i}/{pages}"
             self.info.add(m)
@@ -516,7 +525,7 @@ class AutoTools(MyTab):
                 tb["coords"] = tb.pop("rel_coords")
                 tb.pop("pil_coords")
                 if tb["value"]:
-                    text_node['content'].append(tb)
+                    text_node["content"].append(tb)
         self.info.remove(m)
         self.node.controller.insert(text_node, self.node.id)
 
@@ -529,12 +538,11 @@ class AutoTools(MyTab):
         self.layoutparser_btn.disabled = True
         path = file_path(self.node)
 
-
         nodes = []
         place_non_section_nodes_in = nodes
 
-        i=0
-        total = ImageContainer(path, bulk_render=False).info['Pages']
+        i = 0
+        total = ImageContainer(path, bulk_render=False).info["Pages"]
         m = f"Parsing Layout: {i+1}/{total}"
         self.info.add(m)
 
@@ -547,16 +555,16 @@ class AutoTools(MyTab):
                             "type": "section",
                             "content": [
                                 {
-                                    "value": block.text, 
-                                    "page": i, 
-                                    "coords": block.relative_coordinates
+                                    "value": block.text,
+                                    "page": i,
+                                    "coords": block.relative_coordinates,
                                 }
                             ],
                             "label": block.text,
-                            "children": []
+                            "children": [],
                         },
                     )
-                    place_non_section_nodes_in = nodes[-1]['children']
+                    place_non_section_nodes_in = nodes[-1]["children"]
                 elif block.type in ["List", "Text"]:
                     place_non_section_nodes_in.append(
                         {
@@ -565,7 +573,7 @@ class AutoTools(MyTab):
                                 {
                                     "value": block.text,
                                     "page": i,
-                                    "coords": block.relative_coordinates
+                                    "coords": block.relative_coordinates,
                                 }
                             ],
                         },
@@ -597,21 +605,21 @@ class AutoTools(MyTab):
                                     "coords": block.relative_coordinates,
                                 }
                             ],
-                            "table": img_2_table(cropped_img)
+                            "table": img_2_table(cropped_img),
                         }
                     )
-            
-            i+=1
+
+            i += 1
             self.info.remove(m)
             m = f"Parsing Layout: {i+1}/{total}"
             self.info.add(m)
         self.info.remove(m)
         self.node.controller.insert_nested_dicts(nodes, parent_id=str(path))
-        
+
         if isinstance(btn, Button):
             btn.disabled = False
 
-    def init_layoutparser(self,_=None):
+    def init_layoutparser(self, _=None):
         try:
             import layoutparser as lp
 
@@ -628,9 +636,14 @@ class AutoTools(MyTab):
                 self.lp_desc,
                 ScriptAction(
                     message="LayoutParser is not installed",
-                    args=["pip","install","layoutparser", "layoutparser[paddledetection]"],
-                    callback=self.init_layoutparser
-                )
+                    args=[
+                        "pip",
+                        "install",
+                        "layoutparser",
+                        "layoutparser[paddledetection]",
+                    ],
+                    callback=self.init_layoutparser,
+                ),
             ]
 
 
@@ -668,8 +681,8 @@ class TableTools(MyTab):
     def parse_table(self, _=None):
         path = file_path(self.node)
         imgs = ImageContainer(path, bulk_render=False)
-        img = imgs[self.node.data['content'][0]["page"]]
-        coords = self.node.data['content'][0]["coords"]
+        img = imgs[self.node.data["content"][0]["page"]]
+        coords = self.node.data["content"][0]["coords"]
 
         cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
         rows = img_2_table(cropped_img)
@@ -677,3 +690,87 @@ class TableTools(MyTab):
 
         # Refresh the tab to show the table
         self.set_node(self.node)
+
+
+import re
+
+
+class Search(MyTab):
+    def __init__(self, node):
+        super().__init__()
+        self.node = node
+
+        self.input = Text()
+        self.btn = Button(description="Search")
+        self.case_match = ToggleButton(
+            description="Aa", layout={"width": "40px"}, tooltip="Case Sensitive"
+        )
+        self.regex = ToggleButton(
+            description=".*",
+            layout={"width": "40px"},
+            tooltip="Regular Expression (certain patterns require case-sensitivity to be enabled)",
+        )
+        self.result_window = VBox()
+        search_tools = HBox([self.input, self.btn])
+        search_options = HBox([self.case_match, self.regex])
+        self.children = [VBox([search_tools, search_options, self.result_window])]
+
+        self.btn.on_click(self.search)
+
+    def search(self, btn):
+        q = self.input.value
+        if not self.case_match.value:
+            q = q.lower()
+
+        if not self.regex.value:
+            q = re.escape(q)
+
+        tree = self.node.controller
+        node_id = self.node.id
+
+        results = []
+        exerpts = []
+        counts = []
+
+        for n in tree.dfs(node_id):
+            c = " ".join([c["value"] or "" for c in n.data.get("content") or []])
+            if not self.case_match.value:
+                c = c.lower()
+            if len(results) == 20:
+                break
+
+            count = 0
+            exerpt = []
+            c = re.sub(r"\s+", " ", c)
+            for match in re.finditer(q, c):
+                count += 1
+                margin = 20
+                span = match.span
+                g = match.group()
+                start, end = match.span()
+                exerpt.append(
+                    "..."
+                    + c[max(0, start - 30) : start]
+                    + f"<mark>{g}</mark>"
+                    + c[end : end + 30]
+                    + "..."
+                )
+            if count:
+                results.append(n)
+                counts.append(count)
+                exerpts.append("<br>".join(exerpt))
+
+        widgets = []
+        for n, t, c in sorted(
+            zip(results, exerpts, counts), key=lambda x: x[-1], reverse=True
+        ):
+            p = natural_path(n)
+            btn = Button(description=p, layout={"width": "300px"})
+            btn.node_id = n.id
+            btn.on_click(
+                lambda x: self.node.controller.widget._select_callback(x.node_id)
+            )
+            widgets.append(btn)
+            widgets.append(HTML(t, layout={"width": "500px"}))
+
+        self.result_window.children = widgets

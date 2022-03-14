@@ -21,20 +21,19 @@ from .widgets.better_tree import Tree, TreeWidget
 from .widgets.node_tools import NodeDetail
 
 
-
 import cProfile, pstats
+
 
 def profileit(func):
     def wrapper(*args, **kwargs):
         prof = cProfile.Profile()
         retval = prof.runcall(func, *args, **kwargs)
-        sortby = 'cumulative'
+        sortby = "cumulative"
         ps = pstats.Stats(prof).sort_stats(sortby)
         ps.print_stats(10)
         return retval
 
     return wrapper
-
 
 
 class App(ipyw.HBox):
@@ -55,20 +54,18 @@ class App(ipyw.HBox):
         self.tree = Tree()
         self.tree.rglob(indir, "*.pdf")
 
-        for p,node in list(self.tree.registry.items()):
-            if Path(p).suffix.lower() == '.pdf':
-                json_file = Path(p).with_suffix('.json')
+        for p, node in list(self.tree.registry.items()):
+            if Path(p).suffix.lower() == ".pdf":
+                json_file = Path(p).with_suffix(".json")
                 if json_file.exists():
                     load_from_json(json_file, parent=node)
-
 
         self.tree_visualizer = TreeWidget(self.tree, height=30)
         self.root = self.tree.root
         self.node_detail = NodeDetail(self.root, self.navigator)
 
         self.tree_visualizer.observe(
-            self.on_selection_change, "selected_id",
-            type="change"
+            self.on_selection_change, "selected_id", type="change"
         )
         self.navigator.prev_page_button.on_click(self.prev_page)
         self.navigator.next_page_button.on_click(self.next_page)
@@ -111,21 +108,19 @@ class App(ipyw.HBox):
             node = self.tree_visualizer.selected_node
 
             self.active_node = node
-            self.selection_pipe = self.SELECTION_PIPES.get(node.data['type'], None)
+            self.selection_pipe = self.SELECTION_PIPES.get(node.data["type"], None)
             fname = file_path(node)
             self.node_detail.set_node(node)
 
             if fname is not None and fname.suffix.lower() == ".pdf":
                 if fname != self.fname:
-                    self.imgs = ImageContainer(
-                        fname, bulk_render=self.bulk_render
-                    )
+                    self.imgs = ImageContainer(fname, bulk_render=self.bulk_render)
                     self.n_pages = self.imgs.info["Pages"]
                     self.fname = fname
                 if self.navigator.draw_bboxes.value:
-                    if node.data.get('content',[]):
-                        self.img_index = node.data['content'][0]["page"]
-                    if node.data['type'] == "pdf":
+                    if node.data.get("content", []):
+                        self.img_index = node.data["content"][0]["page"]
+                    if node.data["type"] == "pdf":
                         self.img_index = 0
                 self.load()
             else:
@@ -139,21 +134,21 @@ class App(ipyw.HBox):
         if self.navigator.draw_bboxes.value:
             bboxes = []
             for node in self.tree.dfs(self.active_node.id):
-                _type = node.data['type']
-                for c in node.data.get('content',[]):
-                    if c['page'] == self.img_index:
+                _type = node.data["type"]
+                for c in node.data.get("content", []):
+                    if c["page"] == self.img_index:
                         bboxes.append(
                             (
                                 rel_2_canvas(
-                                    c['coords'],
+                                    c["coords"],
                                     self.full_img.width * self.scaling_factor,
                                     self.full_img.height * self.scaling_factor,
                                 ),
-                                _type
+                                _type,
                             )
                         )
             self.canvas.draw_many(bboxes)
-        self.canvas.set_type(self.active_node.data['type'])
+        self.canvas.set_type(self.active_node.data["type"])
 
     def next_page(self, _=None):
         if self.img_index < self.n_pages - 1:
@@ -187,12 +182,12 @@ class App(ipyw.HBox):
         self.node_detail.set_node(self.active_node)
 
     def handle_image(self, rel_coords):
-        self.active_node.data['content'].append(
+        self.active_node.data["content"].append(
             {"value": None, "page": self.img_index, "coords": rel_coords}
         )
 
     def handle_table(self, rel_coords):
-        self.active_node.data['content'].append(
+        self.active_node.data["content"].append(
             {"value": None, "page": self.img_index, "coords": rel_coords}
         )
 
@@ -208,7 +203,7 @@ class App(ipyw.HBox):
             "page": self.img_index,
             "coords": rel_coords,
         }
-        selected_node.data['content'] = [item]
+        selected_node.data["content"] = [item]
         selected_node.data["label"] = text.strip()
         self.tree_visualizer.refresh()
         self.redraw_boxes()
@@ -220,7 +215,7 @@ class App(ipyw.HBox):
         )
 
         item = {"value": text, "page": self.img_index, "coords": rel_coords}
-        self.active_node.data['content'].append(item)
+        self.active_node.data["content"].append(item)
 
     def save(self, _=None):
         for id, node in self.tree.registry.items():
