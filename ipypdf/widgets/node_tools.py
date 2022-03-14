@@ -700,6 +700,8 @@ class Search(MyTab):
         super().__init__()
         self.node = node
 
+        self.results = []  # for API accessibility
+
         self.input = Text()
         self.btn = Button(description="Search")
         self.case_match = ToggleButton(
@@ -717,14 +719,30 @@ class Search(MyTab):
 
         self.btn.on_click(self.search)
 
-    def search(self, btn):
-        q = self.input.value
+    def search(self, btn=None, **kwargs):
+        """
+        kwargs:
+            case_sensitive <bool>
+            regex <bool>
+            query <str>
+        """
+        # Handle kwargs
+        if kwargs.get("case_sensitive"):
+            self.case_match.value = kwargs.pop("case_sensitive")
+        if kwargs.get("regex"):
+            self.regex.value = kwargs.pop("regex")
+        if kwargs.get("query"):
+            q = kwargs.pop("query")
+        else:
+            q = self.input.value
+
+        # Format Query based on kwargs
         if not self.case_match.value:
             q = q.lower()
-
         if not self.regex.value:
             q = re.escape(q)
 
+        # Search for matches
         tree = self.node.controller
         node_id = self.node.id
 
@@ -736,7 +754,7 @@ class Search(MyTab):
             c = " ".join([c["value"] or "" for c in n.data.get("content") or []])
             if not self.case_match.value:
                 c = c.lower()
-            if len(results) == 20:
+            if len(results) == 50:
                 break
 
             count = 0
@@ -774,3 +792,4 @@ class Search(MyTab):
             widgets.append(HTML(t, layout={"width": "500px"}))
 
         self.result_window.children = widgets
+        self.results = results
