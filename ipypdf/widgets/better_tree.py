@@ -503,11 +503,14 @@ class TreeWidget(ipyw.VBox):
         while parent.id != "root":
             parent.opened = True
             parent = self.tree.parent_of(parent)
+        self.compute_visible()
+        self.refresh()
 
-        for i, node_id in enumerate(self._compute_visible()):
-            if node_id == node.id:
+        for i, n in enumerate(self.viewable_nodes):
+            if n.id == node.id:
                 self.cursor = i
                 break
+        self.slider.value = len(self.viewable_nodes) - self.cursor
         self.refresh()
 
     def event_handler(self, event):

@@ -85,7 +85,7 @@ NAVIGATOR = None
 
 class NodeDetail(Tab):
     def __init__(self, node, nav_hook):
-        super().__init__(layout={"height": "800px"})
+        super().__init__(layout={"height": "900px"})
         global NAVIGATOR
         NAVIGATOR = nav_hook
 
@@ -704,17 +704,28 @@ class Search(MyTab):
 
         self.input = Text()
         self.btn = Button(description="Search")
+        self.partial_search = ToggleButton(
+            icon="search",
+            layout={"width": "40px"},
+            tooltip="Search only the selected node and sub-nodes",
+        )
         self.case_match = ToggleButton(
             description="Aa", layout={"width": "40px"}, tooltip="Case Sensitive"
         )
         self.regex = ToggleButton(
             description=".*",
             layout={"width": "40px"},
-            tooltip="Regular Expression (certain patterns require case-sensitivity to be enabled)",
+            tooltip="Regular Expression (certain patterns require case-sensitivity to function properly)",
         )
         self.result_window = VBox()
         search_tools = HBox([self.input, self.btn])
-        search_options = HBox([self.case_match, self.regex])
+        search_options = HBox(
+            [
+                self.case_match,
+                self.regex,
+                self.partial_search,
+            ]
+        )
         self.children = [VBox([search_tools, search_options, self.result_window])]
 
         self.btn.on_click(self.search)
@@ -744,7 +755,7 @@ class Search(MyTab):
 
         # Search for matches
         tree = self.node.controller
-        node_id = self.node.id
+        node_id = self.node.id if self.partial_search.value else tree.root.id
 
         results = []
         exerpts = []
@@ -784,10 +795,14 @@ class Search(MyTab):
         ):
             p = natural_path(n)
             btn = Button(description=p, layout={"width": "300px"})
-            btn.node_id = n.id
-            btn.on_click(
-                lambda x: self.node.controller.widget._select_callback(x.node_id)
-            )
+            btn.node = n
+
+            def func(btn):
+                #
+                btn.node.controller.widget._select_callback(btn.node.id)
+                btn.node.controller.widget.goto_node(btn.node.id)
+
+            btn.on_click(func)
             widgets.append(btn)
             widgets.append(HTML(t, layout={"width": "500px"}))
 
