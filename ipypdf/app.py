@@ -62,7 +62,10 @@ class App(ipyw.HBox):
 
         self.tree_visualizer = TreeWidget(self.tree, height=30)
         self.root = self.tree.root
-        self.node_detail = NodeDetail(self.root, self.navigator)
+        self.node_detail = NodeDetail(
+            self.root,
+            self.navigator,
+        )
 
         self.tree_visualizer.observe(
             self.on_selection_change, "selected_id", type="change"

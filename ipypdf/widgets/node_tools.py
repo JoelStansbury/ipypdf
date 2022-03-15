@@ -85,7 +85,7 @@ NAVIGATOR = None
 
 class NodeDetail(Tab):
     def __init__(self, node, nav_hook):
-        super().__init__()
+        super().__init__(layout={"height": "800px"})
         global NAVIGATOR
         NAVIGATOR = nav_hook
 
