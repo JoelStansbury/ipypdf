@@ -325,7 +325,7 @@ class Cytoscape(MyTab):
             docs = {
                 node: stringify(node)
                 for node in immediate_children(self.node)
-                if node.data["type"] == "section"
+                if node.data["type"] in ["section","pdf","folder"]
             }
 
         for doc, v in list(docs.items()):
