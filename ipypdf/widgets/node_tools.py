@@ -595,6 +595,10 @@ class AutoTools(MyTab):
                     imgs = ImageContainer(path, bulk_render=False)
                     img = imgs[i]
                     cropped_img = img.crop(block.coordinates)
+                    try:
+                        tbl = img_2_table(cropped_img)
+                    except:
+                        tbl = []
                     place_non_section_nodes_in.append(
                         {
                             "type": "table",
@@ -605,7 +609,7 @@ class AutoTools(MyTab):
                                     "coords": block.relative_coordinates,
                                 }
                             ],
-                            "table": img_2_table(cropped_img),
+                            "table": tbl,
                         }
                     )
 
