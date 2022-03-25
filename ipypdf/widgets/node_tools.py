@@ -152,7 +152,7 @@ class MyTab(HBox):
             "content": [],
         }
         node = self.node.controller.insert(new_node, self.node.id)
-        select(node)
+        select(node, goto=False)
 
     def set_node(self, node):
         self.node = node
@@ -207,6 +207,13 @@ class TextBlockTools(MyTab):
         self.node = node
 
     def redraw_content(self, _=None):
+        """
+        Updates the tab to show updated content. Lists out each of
+        the elements in self.node.data["content"] as a block of text
+        to show the results of the OCR.
+        TODO: These boxes are editable, but there's no procedure for
+        propagating changes back to the node
+        """
         self.children = [
             VBox([Textarea(x["value"]) for x in self.node.data["content"]]),
             self.delete_btn,
@@ -221,28 +228,57 @@ class SpacyInsights(MyTab):
     def __init__(self, node):
         super().__init__()
         self.node = node
-        self._init()
 
-    def _init(self, _=None):
+        self.info = Warnings()
+        self.load_model_btn = Button(description="Load")
+        self.load_model_btn.on_click(self._load_custom_model)
+        self.model_path = Text(placeholder="path/to/pipeline  (en_core_web_lg)")
+        self.model_opts = HBox([self.model_path, self.load_model_btn])
+        self.refresh_btn = Button(
+            description="Run Pipeline",
+            tooltip="Passes text within the current selection into the loaded nlp pipeline and displays the results in a table.",
+        )
+        self.refresh_btn.on_click(self.refresh)
+
+        self.utils = VBox([self.info, self.model_opts, self.refresh_btn])
+        self.output = None
+        self.load_model()
+
+    def _load_custom_model(self, btn):
+        self.load_model(self.model_path.value)
+
+    def load_model(self, path="en_core_web_lg"):
+
+        # Use the default if the text box is empty
+        path = path if path else "en_core_web_lg"
+
+        self.info.clear()
         try:
-            self.nlp = spacy.load("en_core_web_lg")
-            self.refresh_btn = SmallButton("refresh", "Refresh Tables", self.refresh)
-            self.utils = HBox([self.refresh_btn])
-        except OSError:
-            self.utils = ScriptAction(
-                message="Spacy en_core_web_lg is required to use this toolkit",
+            self.nlp = spacy.load(path)
+            self.info.add(f"Using `{path}`")
+            self.refresh_btn.disabled = False
+            self.children = [self.utils]
+        except:
+            self.info.add(f"Failed to load `{path}`", 1)
+            self.refresh_btn.disabled = True
+            self.output = ScriptAction(
+                message="A valid SpaCy model is required to use this toolkit",
                 args=["spacy", "download", "en_core_web_lg"],
-                callback=self._init,
+                callback=self.load_model,
             )
+            self.children = [VBox([self.utils, self.output])]
 
     def set_node(self, node):
-        super().set_node(node)
-        self.children = [self.utils]
         self.node = node
+        self.output = None
         if "spacy-ents" in self.node.data:
             ents = self.node.data["spacy-ents"]
             df = pd.DataFrame(ents)
-            self.children = [VBox([self.utils, DataFrame(df)])]
+            self.output = DataFrame(df)
+        if self.output is not None:
+            self.children = [VBox([self.utils, self.output])]
+        else:
+            self.children = [self.utils]
 
     def refresh(self, _=None):
         doc = self.nlp(stringify(self.node))
@@ -325,7 +361,7 @@ class Cytoscape(MyTab):
             docs = {
                 node: stringify(node)
                 for node in immediate_children(self.node)
-                if node.data["type"] in ["section","pdf","folder"]
+                if node.data["type"] in ["section", "pdf", "folder"]
             }
 
         for doc, v in list(docs.items()):

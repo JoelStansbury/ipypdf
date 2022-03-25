@@ -25,7 +25,6 @@ dependencies:
   - pytesseract
   - tesseract
   - traitlets
-  - spacy-model-en_core_web_lg
   - black
   - conda-build
   - flake8
