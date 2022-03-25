@@ -152,7 +152,7 @@ class MyTab(HBox):
             "content": [],
         }
         node = self.node.controller.insert(new_node, self.node.id)
-        select(node)
+        select(node, goto=False)
 
     def set_node(self, node):
         self.node = node
@@ -325,7 +325,7 @@ class Cytoscape(MyTab):
             docs = {
                 node: stringify(node)
                 for node in immediate_children(self.node)
-                if node.data["type"] in ["section","pdf","folder"]
+                if node.data["type"] in ["section", "pdf", "folder"]
             }
 
         for doc, v in list(docs.items()):

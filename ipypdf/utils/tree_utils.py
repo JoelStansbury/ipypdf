@@ -25,9 +25,9 @@ def stringify(node):
     return " ".join(result)
 
 
-def select(node):
+def select(node, goto=True):
     tree = node.controller
-    select_by_id(tree, node.id)
+    select_by_id(tree, node.id, goto=goto)
 
 
 def _natural_path_backwards(node):
@@ -46,10 +46,11 @@ def natural_path(node):
     return "/".join(bw_path)
 
 
-def select_by_id(tree, node_id):
+def select_by_id(tree, node_id, goto=True):
     w = tree.widget
     w._select_callback(node_id)
-    w.goto_node(node_id)
+    if goto:
+        w.goto_node(node_id)
 
 
 def immediate_children(node):
