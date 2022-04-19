@@ -15,9 +15,10 @@ requirements = [
     "ipywidgets",
     "traitlets",
     "numpy <=1.19.3,>=1.13",
+    "pillow <=9.0.0",
     "pdf2image",
     "layoutparser",
-    "layoutparser[paddledetection]"
+    "layoutparser[paddledetection]",
 ]
 
 setup(

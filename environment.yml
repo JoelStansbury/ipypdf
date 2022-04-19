@@ -18,6 +18,7 @@ dependencies:
   - ipywidgets
   - pandas
   - numpy <=1.19.3,>=1.13
+  - pillow <=9.0.0  # paddlepaddle uses deprecated pillow functions
   - pip:
     - layoutparser
     - layoutparser[paddledetection]

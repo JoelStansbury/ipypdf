@@ -1,15 +1,14 @@
-# PDF Digitizer (_It has a back button!!_)
+# iPyPDF
 A Jupyter-based tool to help parse out structured text from a PDF document and explore the contents.
 
-## Requirements
-* [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
-* `jupyterlab` (notebook also works)
 
 ## Installation
 ### From Source (Recommended)
 1. Clone this repo
 2. Install Anaconda or Miniconda if you do not already have it
-3. Create the environment and install ipypdf from source
+3. Install mamba `conda install mamba`
+    * Solving the environment is impossibly slow without mamba
+4. Create the environment and install ipypdf from source
 ```bash
 mamba env create -f environment.yml -p env/ipypdf
 conda activate env/ipypdf
@@ -40,15 +39,6 @@ pip install ipypdf
 python -m spacy download en_core_web_sm
 ```
 
-### Development
-see `DEVELOPMENT.md`
-
-### Common Issues
-* AutoTools widget keeps saying layoutparser is not installed
-    * This is usually a problem with pywin32.
-    * Try `conda install pywin32`
-    * Also make sure that numpy is <1.19.3
-
 ## Usage
 ipypdf is build for jupyter lab but should also work in jupyter notebooks.
 
@@ -58,6 +48,18 @@ from ipypdf import App
 app = App("path/to/your/pdfs", bulk_render=False)
 app
 ```
+
+see `notebooks` for additional info
+
+### Development
+see `DEVELOPMENT.md`
+
+### Common Issues
+* AutoTools widget keeps saying layoutparser is not installed
+    * This is usually a problem with pywin32.
+    * Try `conda install pywin32`
+    * Also make sure that numpy is <1.19.3
+
 
 ## Features
 
