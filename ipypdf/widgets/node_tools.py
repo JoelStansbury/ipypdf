@@ -3,7 +3,6 @@ from random import shuffle
 from pathlib import Path
 import json
 
-import matplotlib.colors as mcolors
 import pandas as pd
 import pytesseract as tess
 import spacy
@@ -30,6 +29,7 @@ from .helper_widgets import (
     SmallButton,
     Warnings,
 )
+from ..utils.constants import NODE_COLORS
 from ..utils.image_utils import (
     ImageContainer,
     cv2_2_rel,
@@ -230,53 +230,44 @@ class SpacyInsights(MyTab):
         self.node = node
 
         self.info = Warnings()
-        self.load_model_btn = Button(description="Load")
-        self.load_model_btn.on_click(self._load_custom_model)
-        self.model_path = Text(placeholder="path/to/pipeline  (en_core_web_lg)")
-        self.model_opts = HBox([self.model_path, self.load_model_btn])
+        self.model_path = Text(
+            placeholder="path/to/pipeline  (en_core_web_sm)",
+            continuous_update=False
+        )
+        self.model_path.observe(self._load_custom_model, "value")
+
         self.refresh_btn = Button(
             description="Run Pipeline",
             tooltip="Passes text within the current selection into the loaded nlp pipeline and displays the results in a table.",
         )
         self.refresh_btn.on_click(self.refresh)
 
-        self.utils = VBox([self.info, self.model_opts, self.refresh_btn])
-        self.output = None
+        self.utils = VBox([self.info, self.model_path, self.refresh_btn])
         self.load_model()
 
-    def _load_custom_model(self, btn):
+    def _load_custom_model(self, _):
         self.load_model(self.model_path.value)
 
-    def load_model(self, path="en_core_web_lg"):
+    def load_model(self, path="en_core_web_sm"):
 
         # Use the default if the text box is empty
-        path = path if path else "en_core_web_lg"
+        path = path if path else "en_core_web_sm"
 
         self.info.clear()
         try:
             self.nlp = spacy.load(path)
             self.info.add(f"Using `{path}`")
             self.refresh_btn.disabled = False
-            self.children = [self.utils]
         except:
             self.info.add(f"Failed to load `{path}`", 1)
             self.refresh_btn.disabled = True
-            self.output = ScriptAction(
-                message="A valid SpaCy model is required to use this toolkit",
-                args=["spacy", "download", "en_core_web_lg"],
-                callback=self.load_model,
-            )
-            self.children = [VBox([self.utils, self.output])]
 
     def set_node(self, node):
         self.node = node
-        self.output = None
         if "spacy-ents" in self.node.data:
             ents = self.node.data["spacy-ents"]
             df = pd.DataFrame(ents)
-            self.output = DataFrame(df)
-        if self.output is not None:
-            self.children = [VBox([self.utils, self.output])]
+            self.children = [self.utils, DataFrame(df)]
         else:
             self.children = [self.utils]
 
@@ -383,13 +374,8 @@ class Cytoscape(MyTab):
             ]
             return
 
-        colors = list(
-            mcolors.cnames
-        )  # [x.split(":")[1] for x in mcolors.TABLEAU_COLORS]
-        shuffle(colors)
-
         files = set([file_path(x[0]) for x in sim] + [file_path(x[1]) for x in sim])
-        cmap = {k: colors[i] for i, k in enumerate(files)}
+        cmap = {k: NODE_COLORS[i] for i, k in enumerate(files)}
 
         g_edges = []
         self.edges = []
@@ -664,7 +650,8 @@ class AutoTools(MyTab):
             import layoutparser as lp
 
             self.lp_model = lp.models.PaddleDetectionLayoutModel(
-                "lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config"
+                "lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config",
+                device="cuda"
             )
 
             self.layout_extraction.children = [
@@ -742,8 +729,8 @@ class Search(MyTab):
 
         self.results = []  # for API accessibility
 
-        self.input = Text()
-        self.btn = Button(description="Search")
+        self.input = Text(continuous_update=False)
+        self.input.observe(self.search, "value")
         self.partial_search = ToggleButton(
             icon="search",
             layout={"width": "40px"},
@@ -758,7 +745,6 @@ class Search(MyTab):
             tooltip="Regular Expression (certain patterns require case-sensitivity to function properly)",
         )
         self.result_window = VBox()
-        search_tools = HBox([self.input, self.btn])
         search_options = HBox(
             [
                 self.case_match,
@@ -766,9 +752,8 @@ class Search(MyTab):
                 self.partial_search,
             ]
         )
-        self.children = [VBox([search_tools, search_options, self.result_window])]
+        self.children = [VBox([self.input, search_options, self.result_window])]
 
-        self.btn.on_click(self.search)
 
     def search(self, btn=None, **kwargs):
         """
@@ -786,7 +771,8 @@ class Search(MyTab):
             q = kwargs.pop("query")
         else:
             q = self.input.value
-
+        if not q:
+            return
         # Format Query based on kwargs
         if not self.case_match.value:
             q = q.lower()
