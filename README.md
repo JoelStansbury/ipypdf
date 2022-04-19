@@ -6,36 +6,38 @@ A Jupyter-based tool to help parse out structured text from a PDF document and e
 * `jupyterlab` (notebook also works)
 
 ## Installation
-It is highly recommended that you install this into a clean environment.
-
-> Note: `layoutparser` puts an upper bound on `numpy` (1.19.3), so if you want
-to use the `Parse Layout` button, it's best to install this in an empty environment.
-
-### Conda (recommended)
-> This is the order of operations which worked for me on most recently. Though it could probably be simplified
+### From Source (Recommended)
+1. Clone this repo
+2. Install Anaconda or Miniconda if you do not already have it
+3. Create the environment and install ipypdf from source
 ```bash
-conda create -n ipypdf python pip
-conda activate ipypdf
-pip install numpy==1.19.2
-conda install jupyterlab tesseract -c conda-forge
-python -m pip install ipypdf
-```
-> If using the latest source code, replace `python -m pip install ipypdf` with
-```bash
-git clone https://github.com/JoelStansbury/ipypdf.git
-cd ipypdf
+mamba env create -f environment.yml -p env/ipypdf
+conda activate env/ipypdf
 pip install -e .
 ```
-### No Conda (not tested)
+> Note: you can replace "mamba" with "conda" if you don't have mamba installed. It will just take longer to solve the environment.
 
-Install [Tesseract](https://github.com/tesseract-ocr/tesseract#installing-tesseract)
 
+### From pip
+1. Create a conda environment with `Tesseract` and `Jupyterlab`
 ```bash
-python -m venv envs/ipypdf
-cd envs/ipypdf/Scripts
-activate.bat
-python -m pip install jupyterlab 
-python -m pip install ipypdf
+conda create -n ipypdf jupyterlab tesseract -c conda-forge`
+conda activate ipypdf`
+pip install ipypdf
+```
+2. Get a spacy model (the previous method accomplishes this automatically in the `environment.yml` file)
+   1. `python -m spacy download en_core_web_sm`
+   2. Or `conda install spacy-model-en_core_web_sm -c conda-forge`
+
+### Without Conda
+You may run into some issues with Tesseract environment variables. It is still recommended that you use a fresh environment, `virtualenv` for example, to avoid numpy conflicts.
+1. Install Tesseract
+2. Create and activate a fresh environment (highly recommended)
+3. Install ipypdf and jupyterlab
+```bash
+pip install jupyterlab
+pip install ipypdf
+python -m spacy download en_core_web_sm
 ```
 
 ### Development

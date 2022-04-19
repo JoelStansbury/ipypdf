@@ -12,13 +12,11 @@ requirements = [
     "ipycytoscape",
     "ipyevents",
     "ipywidgets",
-    "ipytree",
     "traitlets",
     "numpy <=1.19.3,>=1.13",
     "pdf2image",
     "layoutparser",
-    "layoutparser[paddledetection]",
-    "matplotlib"
+    "layoutparser[paddledetection]"
 ]
 
 setup(
