@@ -21,7 +21,7 @@ pip install -e .
 1. Create a conda environment with `Tesseract` and `Jupyterlab`
 ```bash
 conda create -n ipypdf jupyterlab tesseract -c conda-forge`
-conda activate ipypdf`
+conda activate ipypdf
 pip install ipypdf
 ```
 2. Get a spacy model (the previous method accomplishes this automatically in the `environment.yml` file)
