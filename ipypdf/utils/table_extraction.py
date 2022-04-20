@@ -8,7 +8,7 @@ from .tess_utils import im_to_data
 def grid_detect(
     im,
     v_thresh=0.05,
-    h_thresh=0.1,
+    h_thresh=0.2,
     min_v_gap=0.05,  # percentage of average word height
     min_h_gap=2,  # percentage of average word height
 ):
