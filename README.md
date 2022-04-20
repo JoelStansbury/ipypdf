@@ -40,7 +40,7 @@ python -m spacy download en_core_web_sm
 ```
 
 ## Usage
-ipypdf is build for jupyter lab but should also work in jupyter notebooks.
+ipypdf is built for jupyter lab but should also work in jupyter notebooks.
 
 1. Launch jupyter lab with `jupyter lab`
 ```python
