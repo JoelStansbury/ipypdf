@@ -21,7 +21,7 @@ pip install -e .
 1. Create a conda environment with `Tesseract` and `Jupyterlab`
 ```bash
 conda create -n ipypdf jupyterlab tesseract -c conda-forge`
-conda activate ipypdf
+conda activate ipypdf`
 pip install ipypdf
 ```
 2. Get a spacy model (the previous method accomplishes this automatically in the `environment.yml` file)
@@ -62,18 +62,26 @@ see `DEVELOPMENT.md`
 
 
 ## Features
+Within the GUI are 3 panels, Table of Contents, PDF viewer, and Tools.
+In this section we are going over all of the various options available in the tools
+panel.
 
-### Auto-Parser
-`layoutparser` is used to determine the location of textblocks, images, and section headers. There is not currently a way to automatically determine the hierarchical position of these items.
+### Auto-Tools
+This tab contains tools which will iterate through each page of the pdf.
+* `Text Only`: Runs each page through [Tesseract](https://github.com/tesseract-ocr/tesseract) to obtain plain text.
+* `Parse Layout`: Uses [layoutparser](https://github.com/Layout-Parser/layout-parser)
+to label portions of the document as either (title, text, image, or table). The sections
+are then assembled together using a few simple rules in order to appoximate a shallow content hierarchy.
+  * Title and Text blocks are cropped out and sent through Tesseract to obtain the text.
+  * Tables are processed using a rule-based table parsing scheme described [here](https://github.com/JoelStansbury/PubTabNet/blob/main/README.pdf). 
+  * Image blocks have no additional processing.
 
-![ezgif-3-51d38d81b3](https://user-images.githubusercontent.com/48299585/146793946-6af29c6d-d83c-4437-ac62-b56d2f787da8.gif)
+![img](imgs/parsing.png)
 
-> Note: this is 4x speed
-
-> Also: This video is out-dated now. The AutoParse button will now attempt to sort all of the nodes. As well as attempting to deduce the 1st level of hierarchical structure.
+> Notice that section 3 is missing. The process is not perfect. In this case, a section title was mislabled by layoutparser as standard text. Mistakes like this are fairly common. To correct them, you can edit the table of contents using the arrow keys (the cursor must be hovering over the table of contents).
 
 ### Table Parsing
-![image](https://user-images.githubusercontent.com/48299585/150610905-566d6e33-b2ac-4eed-b4c5-463f1d9e35f2.png)
+![image](imgs/table.png)
 
 
 ### Cytoscape
@@ -85,6 +93,15 @@ The color of each node denotes the pdf document it originated from.
 
 Selecting a node in the graph will highlight the node in the `DocTree`. Clicking the node in the `DocTree` will render the first page of the node.
 ![image](https://user-images.githubusercontent.com/48299585/140627583-0afea862-0b85-438c-b8b0-b6361f18d8e3.png)
+
+
+### Spacy
+Extracts named entities from the selected branch of the document tree. I.e.,
+the raw text is compiled from a depth first search on whichever node is selected
+in the table of contents. Then, `spacy.nlp(text).ents` returns the named entities
+found within the section.
+
+![image](imgs/spacy.png)
 
 ### Digitizing Utilities
 > I recommend turning off `Show Boxes` as this changes pages every time you add a node (working on a better solution)
@@ -108,4 +125,4 @@ When a `Text` node is selected, the selection tool will attempt to parse text fr
 When an `Image` node is selected, the coordinates of the box are appended to the node's content.
 
 ### Save Button
-This will generate `json` files for each document in the directory with instructions for regenerating any nodes you have created when you open the tool again. Alternatively, you can just load the json into another script to extract the document structure if all you want is the text and the hierarchy.
+This will generate `json` files for each document. When the tool is initialized, these are used to reconstruct the table of contents. You can also use the json file directly.
