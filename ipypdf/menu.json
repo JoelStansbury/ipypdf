@@ -1,0 +1,9 @@
+{
+    "menu_name": "iPyPDF",
+    "menu_items": [
+        {
+            "name": "iPyPDF",
+            "script": "${PREFIX}/Scripts/jupyter lab ${PREFIX}/Lib/site-packages/ipypdf/notebooks/DoctreeBuilder.ipynb"
+        }
+    ]
+}

@@ -14,7 +14,7 @@ requirements = [
     "ipyevents",
     "ipywidgets",
     "traitlets",
-    "numpy <=1.19.3,>=1.13",
+    "numpy <=1.19.2,>=1.13",
     "pillow <=9.0.0",
     "pdf2image",
     "layoutparser",
@@ -23,7 +23,7 @@ requirements = [
 
 setup(
     name="ipypdf",
-    version="0.1.2",
+    version="0.1.4",
     description="Jupyter widget for applying nlp to pdf documents",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -31,14 +31,9 @@ setup(
     author="Joel Stansbury",
     author_email="stansbury.joel@gmail.com",
     url="https://github.com/JoelStansbury/ipypdf",
-    packages=["ipypdf", "tests"],
+    packages=["ipypdf"],
     package_data={
-        "ipypdf": ["utils/*", "widgets/*", "style/*"],
-        "tests": [
-            ".py",
-            "fixture_data/*.pdf",
-            "fixture_data/*.json",
-        ],
+        "ipypdf": ["utils/*", "widgets/*", "style/*", "notebooks/*"],
     },
     install_requires=requirements,
     keywords="ipypdf",

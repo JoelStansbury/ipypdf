@@ -1,0 +1,31 @@
+
+name: iPyPDF
+version: 0.1.2
+
+channels:
+  - https://conda.anaconda.org/conda-forge
+  - http://repo.anaconda.com/pkgs/main/
+
+specs:
+  - pip
+  - menuinst
+  - poppler # needed for pdf.info
+  - pdf2image
+  - pytesseract
+  - tesseract
+  - spacy
+  - spacy-model-en_core_web_sm
+  - jupyterlab
+  - ipycanvas
+  - ipycytoscape
+  - ipyevents
+  - ipywidgets
+  - pandas
+  - numpy =1.19.2
+  - pillow <=9.0.0  # paddlepaddle uses deprecated pillow functions
+
+post_install: "post_install.bat"
+pre_uninstall: "pre_uninstall.bat"
+
+register_python_default: false
+license_file: ../LICENSE

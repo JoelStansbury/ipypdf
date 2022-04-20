@@ -3,7 +3,10 @@ A Jupyter-based tool to help parse out structured text from a PDF document and e
 
 
 ## Installation
-### From Source (Recommended)
+### Windows Installer
+https://drive.google.com/drive/folders/1wmQisECMor04dgv9ZXFc07zq6zcHuija?usp=sharing
+
+### From Source
 1. Clone this repo
 2. Install Anaconda or Miniconda if you do not already have it
 3. Install mamba `conda install mamba`

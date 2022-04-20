@@ -13,4 +13,6 @@ dist
 large_pdfs
 *.csv
 *.json
+!ipypdf/menu.json
 env/
+*.exe

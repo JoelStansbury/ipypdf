@@ -37,5 +37,11 @@ a more static manner.
     * `flake8 ipypdf/ tests/ --ignore W503`
     * `pylint ipypdf/ tests/ --rcfile=.pylintrc`
     
-
+* Updating Windows Installer
+```bash
+conda install constructor
+cd installer
+constructor .
+```
+Upload the new executable to the google drive. Also, come up with a better place to put these
 
