@@ -6,6 +6,15 @@ A Jupyter-based tool to help parse out structured text from a PDF document and e
 ### Windows Installer
 https://drive.google.com/drive/folders/1wmQisECMor04dgv9ZXFc07zq6zcHuija?usp=sharing
 
+This will make a start-menu shortcut called "iPyPDF" which will open up the notebook for parsing documents. Unfortunately the conda installer has some trouble with Tesseract environment variables so you'll need to add this cell to the notebook to get anything to work.
+
+```python
+import os
+import sys
+PREFIX = sys.prefix
+os.environ["TESSDATA_PREFIX"] = f"{PREFIX}/share/tessdata"
+```
+
 ### From Source
 1. Clone this repo
 2. Install Anaconda or Miniconda if you do not already have it
