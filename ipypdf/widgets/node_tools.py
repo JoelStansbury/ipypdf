@@ -157,7 +157,7 @@ class MyTab(HBox):
     def set_node(self, node):
         self.node = node
 
-    def delete_node(self, _):
+    def delete_node(self, _=None):
         tree = self.node.controller
         if self.node.data["type"] == "pdf":
             tree.remove_children(self.node)
@@ -522,7 +522,14 @@ class AutoTools(MyTab):
 
         self.children = [self.options]
 
-    def extract_text(self, btn=None):
+    def extract_text(self, btn=None, page_idxs=None):
+        """
+        Runs each page through Tesseract to get plain text.
+        A new monolithic text node is added as a child to the selected node.
+        The text can be accessed from the new node's data attribute.
+        
+        page_idxs: list of integers
+        """
         if isinstance(btn, Button):
             btn.disabled = True
         text_node = {
@@ -533,6 +540,8 @@ class AutoTools(MyTab):
         }
         path = file_path(self.node)
         pages = ImageContainer(path, bulk_render=False).info["Pages"]
+        if page_idxs is not None:
+            pages = [pages[i] for i in page_idxs]
         i = 0
         m = f""
         self.info.add(m)
