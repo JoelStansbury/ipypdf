@@ -1,5 +1,10 @@
 import json
 from pathlib import Path
+import os
+import sys
+
+# TODO: test if this works on linux and mac
+os.environ["TESSDATA_PREFIX"] = f"{sys.prefix}/share/tessdata"
 
 import ipywidgets as ipyw
 import pytesseract as tess
@@ -21,23 +26,11 @@ from .widgets.better_tree import Tree, TreeWidget
 from .widgets.node_tools import NodeDetail
 
 
-import cProfile, pstats
-
-
-def profileit(func):
-    def wrapper(*args, **kwargs):
-        prof = cProfile.Profile()
-        retval = prof.runcall(func, *args, **kwargs)
-        sortby = "cumulative"
-        ps = pstats.Stats(prof).sort_stats(sortby)
-        ps.print_stats(10)
-        return retval
-
-    return wrapper
+DEFAULT_DIRECTORY = os.path.expanduser('~/Documents')
 
 
 class App(ipyw.HBox):
-    def __init__(self, indir, bulk_render=False):
+    def __init__(self, directory=DEFAULT_DIRECTORY, bulk_render=False):
         super().__init__()
         self.add_class("ipypdf-main-app")
 
@@ -52,7 +45,7 @@ class App(ipyw.HBox):
         self.canvas = PdfCanvas(height=1000)
 
         self.tree = Tree()
-        self.tree.rglob(indir, "*.pdf")
+        self.tree.rglob(directory, "*.pdf")
 
         for p, node in list(self.tree.registry.items()):
             if Path(p).suffix.lower() == ".pdf":

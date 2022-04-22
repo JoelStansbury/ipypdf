@@ -82,7 +82,7 @@ class Node:
         self.selected = False
 
     def __repr__(self):
-        return self.data["label"]
+        return f'Node({self.data.get("label", self.id)})'
 
     def to_dict(self):
         self.data["id"] = self.id
