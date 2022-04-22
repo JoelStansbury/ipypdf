@@ -33,16 +33,6 @@ pip install ipypdf
    1. `python -m spacy download en_core_web_sm`
    2. Or `conda install spacy-model-en_core_web_sm -c conda-forge`
 
-### Without Conda
-You may run into some issues with Tesseract environment variables. It is still recommended that you use a fresh environment, `virtualenv` for example, to avoid numpy conflicts.
-1. Install Tesseract
-2. Create and activate a fresh environment (highly recommended)
-3. Install ipypdf and jupyterlab
-```bash
-pip install jupyterlab
-pip install ipypdf
-python -m spacy download en_core_web_sm
-```
 
 ## Usage
 ipypdf is built for jupyter lab but should also work in jupyter notebooks.
