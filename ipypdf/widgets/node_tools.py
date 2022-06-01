@@ -797,7 +797,7 @@ class Search(MyTab):
         counts = []
 
         for n in tree.dfs(node_id):
-            c = " ".join([c["value"] or "" for c in n.data.get("content") or []])
+            c = " ".join([str(c["value"]) or "" for c in n.data.get("content") or []])
             if not self.case_match.value:
                 c = c.lower()
             if len(results) == 50:
