@@ -1,1 +1,1 @@
-python -m ipypdf remove_shortcut
+@REM python -m ipypdf remove_shortcut

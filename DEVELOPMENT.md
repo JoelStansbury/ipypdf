@@ -40,6 +40,7 @@ a more static manner.
 * Updating Windows Installer
 ```bash
 conda install constructor
+conda install nsis
 cd installer
 constructor .
 ```
