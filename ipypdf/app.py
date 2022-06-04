@@ -6,6 +6,11 @@ import sys
 # TODO: test if this works on linux and mac
 os.environ["TESSDATA_PREFIX"] = f"{sys.prefix}/share/tessdata"
 
+# Override Python/C++ message sharing deprecation
+# https://developers.google.com/protocol-buffers/docs/reference/python-generated#sharing-messages
+# os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "cpp"
+
+
 import ipywidgets as ipyw
 import pytesseract as tess
 

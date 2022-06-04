@@ -12,12 +12,7 @@ requirements = [
     "ipycanvas",
     "ipycytoscape",
     "ipyevents",
-    "ipywidgets",
     "traitlets",
-    "numpy <=1.19.2,>=1.13",
-    "pillow <=9.0.0",
-    "pdf2image",
-    "layoutparser",
     "layoutparser[paddledetection]",
 ]
 
