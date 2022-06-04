@@ -17,13 +17,13 @@ requirements = [
     "numpy <=1.19.2,>=1.13",
     "pillow <=9.0.0",
     "pdf2image",
-    "layoutparser",
+    "protobuf <=3.20",
     "layoutparser[paddledetection]",
 ]
 
 setup(
     name="ipypdf",
-    version="0.1.5",
+    version="0.1.6",
     description="Jupyter widget for applying nlp to pdf documents",
     long_description=long_description,
     long_description_content_type="text/markdown",
