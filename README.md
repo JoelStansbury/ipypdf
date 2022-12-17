@@ -18,18 +18,6 @@ mamba install doit
 doit
 ```
 
-### From pip
-1. Create a conda environment with `Tesseract` and `Jupyterlab`
-```bash
-conda create -n ipypdf jupyterlab tesseract -c conda-forge`
-conda activate ipypdf
-pip install ipypdf
-```
-2. Get a spacy model (the previous method accomplishes this automatically in the `environment.yml` file)
-   1. `python -m spacy download en_core_web_sm`
-   2. Or `conda install spacy-model-en_core_web_sm -c conda-forge`
-
-
 ## Usage
 ipypdf is built for jupyter lab but should also work in jupyter notebooks.
 
