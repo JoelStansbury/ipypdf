@@ -9,7 +9,9 @@ def test_parse_text(app, pdf_nodes):
     app.tree.remove_children(doc_node)  # clear any previously defined nodes
 
     AutoTools(doc_node).extract_text()
-    assert len(doc_node.data['children']) > 0, "Layoutparser could not find any nodes"
+    assert (
+        len(doc_node.data["children"]) > 0
+    ), "Layoutparser could not find any nodes"
 
     # Cleanup
     app.tree.remove_children(doc_node)

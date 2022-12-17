@@ -1,16 +1,11 @@
 import json
-from pathlib import Path
 import os
 import sys
-
-# TODO: test if this works on linux and mac
-os.environ["TESSDATA_PREFIX"] = f"{sys.prefix}/share/tessdata"
+from pathlib import Path
 
 import ipywidgets as ipyw
-import pytesseract as tess
 
 from .style.style import CSS
-from .utils.tree_utils import file_path, to_dict, load_from_json
 from .utils.image_utils import (
     ImageContainer,
     canvas_2_rel,
@@ -20,13 +15,18 @@ from .utils.image_utils import (
     rel_crop,
     scale,
 )
+from .utils.tree_utils import file_path, load_from_json, to_dict
+from .widgets.better_tree import Tree, TreeWidget
 from .widgets.canvas import PdfCanvas
 from .widgets.navigation import NavigationToolbar
-from .widgets.better_tree import Tree, TreeWidget
 from .widgets.node_tools import NodeDetail
 
+# TODO: test if this works on linux and mac
+os.environ["TESSDATA_PREFIX"] = f"{sys.prefix}/share/tessdata"
 
-DEFAULT_DIRECTORY = os.path.expanduser('~/Documents')
+import pytesseract as tess
+
+DEFAULT_DIRECTORY = os.path.expanduser("~/Documents")
 
 
 class App(ipyw.HBox):
@@ -104,13 +104,17 @@ class App(ipyw.HBox):
             node = self.tree_visualizer.selected_node
 
             self.active_node = node
-            self.selection_pipe = self.SELECTION_PIPES.get(node.data["type"], None)
+            self.selection_pipe = self.SELECTION_PIPES.get(
+                node.data["type"], None
+            )
             fname = file_path(node)
             self.node_detail.set_node(node)
 
             if fname is not None and fname.suffix.lower() == ".pdf":
                 if fname != self.fname:
-                    self.imgs = ImageContainer(fname, bulk_render=self.bulk_render)
+                    self.imgs = ImageContainer(
+                        fname, bulk_render=self.bulk_render
+                    )
                     self.n_pages = self.imgs.info["Pages"]
                     self.fname = fname
                 if self.navigator.draw_bboxes.value:

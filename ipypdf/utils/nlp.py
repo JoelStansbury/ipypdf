@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
 
-from numpy import array, dot, zeros, flip
+from numpy import array, dot, flip, zeros
 from numpy.linalg import norm
 
 

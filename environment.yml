@@ -21,6 +21,11 @@ dependencies:
   - pillow <=9.0.0  # paddlepaddle uses deprecated pillow functions
   - pytest
   - pytest-cov
+  - black
+  - isort
+  - flake8
+  - pylint
   - pip:
-    - layoutparser
+    - layoutparser==0.3.4
+    - paddlepaddle==2.1.0
     - layoutparser[paddledetection]
