@@ -103,7 +103,8 @@ class NodeDetail(Tab):
             # SectionInsights(node),
             # Summary(node),
         ]
-        self.titles = [
+        # self.children = self.tabs
+        self._titles = [
             "Info",
             "Tools",
             "ImageTools",
@@ -117,19 +118,20 @@ class NodeDetail(Tab):
             # "Summary",
         ]
 
-        self.set_title(0, "Info")
+        self.titles = self._titles
 
     def set_node(self, node):
         self.node = node
         indexes = NODE_KWARGS[self.node.data["type"]]
         children = []
+        titles = []
         for i in indexes:
             children.append(self.tabs[i])
+            titles.append(self._titles[i])
             if getattr(self.tabs[i], "set_node", False):
                 self.tabs[i].set_node(node)
         self.children = children
-        for i, j in enumerate(indexes):
-            self.set_title(i, self.titles[j])
+        self.titles = titles
 
 
 class MyTab(HBox):
