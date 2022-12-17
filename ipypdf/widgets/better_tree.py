@@ -1,14 +1,14 @@
 # Author: Joel Stansbury
 # Email: stansbury.joel@gmail.com
 
-from pathlib import Path
 import time
+from pathlib import Path
+from typing import List, Union
 from uuid import uuid1
+
 import ipywidgets as ipyw
 from ipyevents import Event
-from traitlets import Unicode, Int, link, observe
-from typing import Union, List
-
+from traitlets import Int, Unicode, link, observe
 
 CSS = ipyw.HTML(
     """
@@ -125,7 +125,9 @@ class Tree:
     def _validate(self):
         for id, node in self.registry.items():
             for c in node.data["children"]:
-                assert c in self.registry, f"child {c} of {node} does not exist"
+                assert (
+                    c in self.registry
+                ), f"child {c} of {node} does not exist"
                 assert self.registry[c].parent == id, (
                     f"child {self.registry[c]} has a different parent: {self.parent_of(c)}.\n"
                     + f"Should be: {self.registry[id]}"
@@ -196,7 +198,9 @@ class Tree:
         return node.parent.level + 1
 
     def add_multiple(
-        self, node_list: List[Union[Node, dict]], parent: Union[str, Node] = "root"
+        self,
+        node_list: List[Union[Node, dict]],
+        parent: Union[str, Node] = "root",
     ):
         """
         If a node is not present in any of the other provided
@@ -206,7 +210,9 @@ class Tree:
         every node in `node_list` is required to have a 'children' attribute
         """
         parent = self._handle_type(parent)
-        node_list = [self._handle_type(node, allow_creation=True) for node in node_list]
+        node_list = [
+            self._handle_type(node, allow_creation=True) for node in node_list
+        ]
 
         ids = set([x.id for x in node_list])
         children = set(sum([x.data["children"] for x in node_list], []))
@@ -281,7 +287,9 @@ class Tree:
             parent_id = self.root.id
         for node_data in node_data_list:
             self._insert_nested_dict(
-                node_data=node_data, children_key=children_key, parent_id=parent_id
+                node_data=node_data,
+                children_key=children_key,
+                parent_id=parent_id,
             )
         self._housekeeping()
 
@@ -323,7 +331,8 @@ class Tree:
         for c in node_ids:
             yield self.registry[c]
         next_ids = sum(
-            [self.registry[node_id].data["children"] for node_id in node_ids], []
+            [self.registry[node_id].data["children"] for node_id in node_ids],
+            [],
         )
         if next_ids:
             yield from self.bfs(next_ids)
@@ -358,7 +367,7 @@ class Tree:
             _id = root
             for part in p.parts[skip:]:
                 _id = _id / part
-                if not part in [x["label"] for x in cursor["children"]]:
+                if part not in [x["label"] for x in cursor["children"]]:
                     _type = "folder"
                     if len(part.split(".")) > 1:
                         _type = part.split(".")[-1]
@@ -370,7 +379,9 @@ class Tree:
                             "type": _type,
                         }
                     )
-                cursor = [x for x in cursor["children"] if x["label"] == part][0]
+                cursor = [x for x in cursor["children"] if x["label"] == part][
+                    0
+                ]
         self.insert_nested_dicts(nodes["children"])
 
     def __repr__(self, node_id: str = "root", level=0):
@@ -463,7 +474,9 @@ class TreeWidget(ipyw.VBox):
         if len(self.viewable_nodes) > 1:
             previous_max = self.slider.max
             previous_value = self.slider.value
-            new_value = len(self.viewable_nodes) - (previous_max - previous_value)
+            new_value = len(self.viewable_nodes) - (
+                previous_max - previous_value
+            )
             self.slider.max = len(self.viewable_nodes)
             self.slider.value = new_value
 
@@ -538,7 +551,9 @@ class TreeWidget(ipyw.VBox):
             current_parent = self.tree.parent_of(self.selected_node)
             if current_parent is None:
                 return  # Cannot move root
-            current_pos = current_parent.data["children"].index(self.selected_node.id)
+            current_pos = current_parent.data["children"].index(
+                self.selected_node.id
+            )
             if k in ["ArrowLeft", "ArrowRight"]:
                 if k == "ArrowLeft":
                     if current_parent == self.tree.root:
@@ -546,25 +561,35 @@ class TreeWidget(ipyw.VBox):
                     else:
                         new_parent = self.tree.parent_of(current_parent)
                         new_pos = (
-                            new_parent.data["children"].index(current_parent.id) + 1
+                            new_parent.data["children"].index(
+                                current_parent.id
+                            )
+                            + 1
                         )
                         self.tree.move(self.selected_node, new_parent, new_pos)
                 elif k == "ArrowRight":
                     if current_pos == 0:
                         pass  # No suitable parent
                     else:
-                        new_parent = current_parent.data["children"][current_pos - 1]
+                        new_parent = current_parent.data["children"][
+                            current_pos - 1
+                        ]
                         self.tree.move(self.selected_node, new_parent)
             if k in ["ArrowUp", "ArrowDown"]:
                 if k == "ArrowUp":
                     self.tree.move(
-                        self.selected_node, current_parent, max(0, current_pos - 1)
+                        self.selected_node,
+                        current_parent,
+                        max(0, current_pos - 1),
                     )
                 elif k == "ArrowDown":
                     self.tree.move(
                         self.selected_node,
                         current_parent,
-                        min(len(current_parent.data["children"]) - 1, current_pos + 1),
+                        min(
+                            len(current_parent.data["children"]) - 1,
+                            current_pos + 1,
+                        ),
                     )
 
     def refresh(self):
@@ -600,7 +625,12 @@ class NodeWidget(ipyw.HBox):
         self.html = ipyw.HTML()
         self.indent_box = ipyw.HTML()
 
-        self.children = [self.indent_box, self.expand_btn, self.button, self.html]
+        self.children = [
+            self.indent_box,
+            self.expand_btn,
+            self.button,
+            self.html,
+        ]
 
         # Style
         self.expand_btn.add_class("better-tree-small")

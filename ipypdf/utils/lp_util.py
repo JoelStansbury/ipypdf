@@ -43,7 +43,9 @@ def sort_layout(layout: list):
 def parse_layout(fname, model=None, start=0, stop=-1, ignore_warning=False):
     if model is None:
         if not ignore_warning:
-            warnings.warn("No model provided: loading 'ppyolov2_r50vd_dcn_365e'")
+            warnings.warn(
+                "No model provided: loading 'ppyolov2_r50vd_dcn_365e'"
+            )
         import layoutparser as lp
 
         model = lp.models.PaddleDetectionLayoutModel(
@@ -62,5 +64,7 @@ def parse_layout(fname, model=None, start=0, stop=-1, ignore_warning=False):
                 block.coordinates, img.width, img.height
             )
             if block.type in ["Title", "List", "Text"]:
-                block.text = tess.image_to_string(img.crop(block.coordinates)).strip()
+                block.text = tess.image_to_string(
+                    img.crop(block.coordinates)
+                ).strip()
         yield layout

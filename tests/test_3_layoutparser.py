@@ -1,4 +1,5 @@
 from collections import defaultdict
+
 from ipypdf.widgets.node_tools import AutoTools
 
 
@@ -25,11 +26,13 @@ def test_parse_layout(app, pdf_nodes):
     app.tree.remove_children(doc_node)
 
     AutoTools(doc_node).extract_layout()
-    assert len(doc_node.data['children']) > 0, "Layoutparser could not find any nodes"
+    assert (
+        len(doc_node.data["children"]) > 0
+    ), "Layoutparser could not find any nodes"
 
     types = defaultdict(list)
     for x in app.tree.dfs(doc_node.id):
-        types[x.data['type']].append(x.data.get('label',''))
+        types[x.data["type"]].append(x.data.get("label", ""))
 
     assert len(types["section"]) == 3, types["section"]
     # Finding the image is too flaky

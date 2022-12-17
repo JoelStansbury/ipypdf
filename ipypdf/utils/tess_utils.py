@@ -52,7 +52,9 @@ def fit_bboxes_to_text(im, tessdata):
     im = np.array(im).sum(axis=2)
     im = im / im.max()
     im = abs(im - 1)
-    for i, bbox in enumerate(tessdata[["left", "top", "width", "height"]].values):
+    for i, bbox in enumerate(
+        tessdata[["left", "top", "width", "height"]].values
+    ):
         x, y, w, h = bbox
         cropped = im[y : y + h, x : x + w]
 
@@ -157,7 +159,9 @@ def get_text_blocks(path):
             y1 = min(tmp["top"])
             x2 = max(tmp["left"] + tmp["width"])
             y2 = max(tmp["top"] + tmp["height"])
-            coords = pil_2_rel([x1, y1, x2, y2], w["page_width"], w["page_height"])
+            coords = pil_2_rel(
+                [x1, y1, x2, y2], w["page_width"], w["page_height"]
+            )
             text = " ".join(tmp["text"])
             text_blocks.append(
                 {

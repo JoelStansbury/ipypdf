@@ -1,7 +1,7 @@
 import sys
-import menuinst
-import os
 from pathlib import Path
+
+import menuinst
 
 HERE = Path(__file__).parent
 ENV = Path(sys.executable).parent

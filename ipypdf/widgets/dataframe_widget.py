@@ -62,7 +62,9 @@ class _ButtonCell(Button):
 class _Row(HBox):
     value = Int(-1).tag(sync=True)
 
-    def __init__(self, data, widths, on_click, style, max_char, _types=None, **kwargs):
+    def __init__(
+        self, data, widths, on_click, style, max_char, _types=None, **kwargs
+    ):
         super().__init__(**kwargs)
         self.add_class(style)
         self.observe(on_click, "value")
@@ -118,11 +120,15 @@ class _Content(VBox):
     def __init__(self, df, to_show, widths, wrap_around, max_char, **kwargs):
         super().__init__(**kwargs)
         self.add_class("content")
-        d = Event(source=self, watched_events=["wheel", "mousemove", "mouseleave"])
+        d = Event(
+            source=self, watched_events=["wheel", "mousemove", "mouseleave"]
+        )
         d.on_dom_event(self.event_handler)
 
         self.to_show = to_show
-        self.num_rows = min(len(df), to_show if to_show % 2 == 0 else to_show + 1)
+        self.num_rows = min(
+            len(df), to_show if to_show % 2 == 0 else to_show + 1
+        )
         self.idx = 0
         self.wrap_around = wrap_around
         self.df = df
@@ -198,7 +204,9 @@ class _Content(VBox):
         for k in range(i, j):
             x = min(self.idx + k, N - 1)
             self.rows[k].update(self.records[x])
-        self.children = [self.rows[i] for i in range(min(self.to_show, len(self.rows)))]
+        self.children = [
+            self.rows[i] for i in range(min(self.to_show, len(self.rows)))
+        ]
 
     def event_handler(self, event):
         # print(event)
@@ -219,7 +227,9 @@ class DataFrame(VBox):
 
     value = Int().tag(sync=True)
 
-    def __init__(self, df, num_rows=10, wrap_around=False, max_char=1000, **kwargs):
+    def __init__(
+        self, df, num_rows=10, wrap_around=False, max_char=1000, **kwargs
+    ):
         super().__init__(**kwargs)
         self.max_char = max_char
 
@@ -260,4 +270,6 @@ class DataFrame(VBox):
         cols = ["Index"] + cols
         total = sum(list(widths.values()))
 
-        return f"{total*ppc}px", [f"{ceil(100*widths[k]/total)}%" for k in cols]
+        return f"{total*ppc}px", [
+            f"{ceil(100*widths[k]/total)}%" for k in cols
+        ]

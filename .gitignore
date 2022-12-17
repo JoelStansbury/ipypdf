@@ -1,18 +1,29 @@
-__pycache__
-Untitled.*
-*.egg-info
-.ipynb_checkpoints
 .vscode/
 *.code-workspace
-envs/
+
 build/*
-pdfs
-.coverage
-junit.xml
 dist
+*.exe
+
+pdfs
 large_pdfs
 *.csv
 *.json
 !ipypdf/menu.json
+
+# Python
+__pycache__
+Untitled.*
+*.egg-info
+.ipynb_checkpoints
+.coverage
+junit.xml
+
+
+# Environment
 env/
-*.exe
+envs/
+.venv
+
+# doit logs
+.doit.db.*

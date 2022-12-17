@@ -1,11 +1,12 @@
-from collections import defaultdict
-from random import shuffle
-from pathlib import Path
 import json
+from collections import defaultdict
+from pathlib import Path
+from random import shuffle
 
 import pandas as pd
 import pytesseract as tess
 import spacy
+from ipycytoscape import CytoscapeWidget
 from ipywidgets import (
     HTML,
     Button,
@@ -19,16 +20,7 @@ from ipywidgets import (
     VBox,
 )
 from traitlets import List, link, observe
-from ipycytoscape import CytoscapeWidget
 
-from .helper_widgets import (
-    RedText,
-    ActionRequired,
-    ScriptAction,
-    CodeBlock,
-    SmallButton,
-    Warnings,
-)
 from ..utils.constants import NODE_COLORS
 from ..utils.image_utils import (
     ImageContainer,
@@ -37,19 +29,27 @@ from ..utils.image_utils import (
     rel_2_cv2,
     rel_2_pil,
 )
+from ..utils.lp_util import parse_layout
 from ..utils.nlp import tfidf_similarity
-from ..utils.tree_utils import (
-    file_path,
-    stringify,
-    select,
-    immediate_children,
-    select_by_id,
-    natural_path,
-)
 from ..utils.table_extraction import img_2_table
 from ..utils.tess_utils import get_text_blocks
-from ..utils.lp_util import parse_layout
+from ..utils.tree_utils import (
+    file_path,
+    immediate_children,
+    natural_path,
+    select,
+    select_by_id,
+    stringify,
+)
 from .dataframe_widget import DataFrame
+from .helper_widgets import (
+    ActionRequired,
+    CodeBlock,
+    RedText,
+    ScriptAction,
+    SmallButton,
+    Warnings,
+)
 
 NODE_KWARGS = {
     "folder": [0, 5, 8],
@@ -103,7 +103,8 @@ class NodeDetail(Tab):
             # SectionInsights(node),
             # Summary(node),
         ]
-        self.titles = [
+        # self.children = self.tabs
+        self._titles = [
             "Info",
             "Tools",
             "ImageTools",
@@ -117,19 +118,20 @@ class NodeDetail(Tab):
             # "Summary",
         ]
 
-        self.set_title(0, "Info")
+        self.titles = self._titles
 
     def set_node(self, node):
         self.node = node
         indexes = NODE_KWARGS[self.node.data["type"]]
         children = []
+        titles = []
         for i in indexes:
             children.append(self.tabs[i])
+            titles.append(self._titles[i])
             if getattr(self.tabs[i], "set_node", False):
                 self.tabs[i].set_node(node)
         self.children = children
-        for i, j in enumerate(indexes):
-            self.set_title(i, self.titles[j])
+        self.titles = titles
 
 
 class MyTab(HBox):
@@ -170,7 +172,9 @@ class SubsectionTools(MyTab):
         super().__init__()
         self.node = node
 
-        self.text = SmallButton("align-left", "Add a new text node", self.add_node)
+        self.text = SmallButton(
+            "align-left", "Add a new text node", self.add_node
+        )
         section = SmallButton("indent", "Add a subsection", self.add_node)
         image = SmallButton("image", "Add an image", self.add_node)
         table = SmallButton("table", "Add a Table", self.add_node)
@@ -232,7 +236,7 @@ class SpacyInsights(MyTab):
         self.info = Warnings()
         self.model_path = Text(
             placeholder="path/to/pipeline  (en_core_web_sm)",
-            continuous_update=False
+            continuous_update=False,
         )
         self.model_path.observe(self._load_custom_model, "value")
 
@@ -295,14 +299,18 @@ class SpacyInsights(MyTab):
             ]
         )
 
-        self.children = [VBox([self.utils, DataFrame(ents), DataFrame(token_df)])]
+        self.children = [
+            VBox([self.utils, DataFrame(ents), DataFrame(token_df)])
+        ]
 
 
 class Cytoscape(MyTab):
     def __init__(self, node):
         super().__init__()
         self.node = node
-        self.refresh_btn = SmallButton("refresh", "Recompute network", self.refresh)
+        self.refresh_btn = SmallButton(
+            "refresh", "Recompute network", self.refresh
+        )
         self.slider = FloatSlider(0.4, min=0, max=1)
         self.config_btn_recursive = Checkbox(True, description="Recursive")
         self.config_btn_intradoc = Checkbox(
@@ -346,7 +354,9 @@ class Cytoscape(MyTab):
             gen = self.node.controller.dfs(self.node.id)
             next(gen)  # skip first
             docs = {
-                node: stringify(node) for node in gen if node.data["type"] == "section"
+                node: stringify(node)
+                for node in gen
+                if node.data["type"] == "section"
             }
         else:
             docs = {
@@ -374,7 +384,9 @@ class Cytoscape(MyTab):
             ]
             return
 
-        files = set([file_path(x[0]) for x in sim] + [file_path(x[1]) for x in sim])
+        files = set(
+            [file_path(x[0]) for x in sim] + [file_path(x[1]) for x in sim]
+        )
         cmap = {k: NODE_COLORS[i] for i, k in enumerate(files)}
 
         g_edges = []
@@ -384,9 +396,9 @@ class Cytoscape(MyTab):
             self.edges.append([source.id, target.id, weight])
             if weight > self.slider.value and source.id != target.id:
 
-                if self.config_btn_intradoc.value or file_path(source) != file_path(
-                    target
-                ):
+                if self.config_btn_intradoc.value or file_path(
+                    source
+                ) != file_path(target):
                     nodes_with_edges.add(source)
                     nodes_with_edges.add(target)
                     g_edges.append(
@@ -467,7 +479,9 @@ class Cytoscape(MyTab):
         else:
             path = str(path) + "_edgelist.csv"
         with open(path, "w") as f:
-            f.write("\n".join([",".join([str(x) for x in e]) for e in self.edges]))
+            f.write(
+                "\n".join([",".join([str(x) for x in e]) for e in self.edges])
+            )
 
 
 class AutoTools(MyTab):
@@ -527,7 +541,7 @@ class AutoTools(MyTab):
         Runs each page through Tesseract to get plain text.
         A new monolithic text node is added as a child to the selected node.
         The text can be accessed from the new node's data attribute.
-        
+
         page_idxs: list of integers
         """
         if isinstance(btn, Button):
@@ -659,8 +673,7 @@ class AutoTools(MyTab):
             import layoutparser as lp
 
             self.lp_model = lp.models.PaddleDetectionLayoutModel(
-                "lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config",
-                device="cuda"
+                "lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config", device="cuda"
             )
 
             self.layout_extraction.children = [
@@ -746,7 +759,9 @@ class Search(MyTab):
             tooltip="Search only the selected node and sub-nodes",
         )
         self.case_match = ToggleButton(
-            description="Aa", layout={"width": "40px"}, tooltip="Case Sensitive"
+            description="Aa",
+            layout={"width": "40px"},
+            tooltip="Case Sensitive",
         )
         self.regex = ToggleButton(
             description=".*",
@@ -761,8 +776,9 @@ class Search(MyTab):
                 self.partial_search,
             ]
         )
-        self.children = [VBox([self.input, search_options, self.result_window])]
-
+        self.children = [
+            VBox([self.input, search_options, self.result_window])
+        ]
 
     def search(self, btn=None, **kwargs):
         """
@@ -797,7 +813,9 @@ class Search(MyTab):
         counts = []
 
         for n in tree.dfs(node_id):
-            c = " ".join([str(c["value"]) or "" for c in n.data.get("content") or []])
+            c = " ".join(
+                [str(c["value"]) or "" for c in n.data.get("content") or []]
+            )
             if not self.case_match.value:
                 c = c.lower()
             if len(results) == 50:

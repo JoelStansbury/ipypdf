@@ -1,7 +1,6 @@
 import io
 from pathlib import Path
 
-from PIL import Image
 import ipywidgets as ipyw
 from pdf2image import convert_from_path, pdfinfo_from_path
 
@@ -15,7 +14,9 @@ def fit(img, w, h):
 def scale(img, factor):
     w_old = img.width
     h_old = img.height
-    return img.resize(size=(int(w_old * factor), int(h_old * factor)), resample=1)
+    return img.resize(
+        size=(int(w_old * factor), int(h_old * factor)), resample=1
+    )
 
 
 def scale_coords(coords, w, h):
@@ -95,6 +96,9 @@ class ImageContainer:
         else:
             # manual page indexing starts at 1
             img = convert_from_path(
-                str(self.fname), first_page=i + 1, last_page=i + 1, dpi=self.dpi
+                str(self.fname),
+                first_page=i + 1,
+                last_page=i + 1,
+                dpi=self.dpi,
             )[0]
         return img

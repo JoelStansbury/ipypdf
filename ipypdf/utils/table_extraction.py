@@ -1,6 +1,4 @@
 import numpy as np
-import pandas as pd
-import pytesseract as tess
 
 from .tess_utils import im_to_data
 
