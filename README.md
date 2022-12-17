@@ -3,24 +3,20 @@ A Jupyter-based tool to help parse out structured text from a PDF document and e
 
 
 ## Installation
-### Windows Installer
+### Windows Installer [Currently Broken]
 https://drive.google.com/drive/folders/1wmQisECMor04dgv9ZXFc07zq6zcHuija?usp=sharing
 
 This will make a start-menu shortcut called "iPyPDF" which will open up the notebook for parsing documents.
 
 ### From Source
 1. Clone this repo
-2. Install Anaconda or Miniconda if you do not already have it
-3. Install mamba `conda install mamba`
-    * Solving the environment is impossibly slow without mamba
-4. Create the environment and install ipypdf from source
+2. Install [MambaForge](https://conda-forge.org/miniforge/) if you do not already have it
+From a conda terminal, navigate to the root of this repository and execute the following commands
 ```bash
-mamba env create -f environment.yml -p env/ipypdf
-conda activate env/ipypdf
-pip install -e .
+mamba update conda mamba
+mamba install doit
+doit
 ```
-> Note: you can replace "mamba" with "conda" if you don't have mamba installed. It will just take longer to solve the environment.
-
 
 ### From pip
 1. Create a conda environment with `Tesseract` and `Jupyterlab`
