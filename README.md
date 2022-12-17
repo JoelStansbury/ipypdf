@@ -11,7 +11,7 @@ This will make a start-menu shortcut called "iPyPDF" which will open up the note
 ### From Source
 1. Clone this repo
 2. Install [MambaForge](https://conda-forge.org/miniforge/) if you do not already have it
-From a conda terminal, navigate to the root of this repository and execute the following commands
+3. From a conda terminal, navigate to the root of this repository and execute the following commands
 ```bash
 mamba update conda mamba
 mamba install doit
