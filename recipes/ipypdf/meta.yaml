@@ -1,0 +1,23 @@
+{% set version = "0.1.8" %}
+
+package:
+  name: ipypdf
+  version: {{ version }}
+
+source:
+  - path: ../../ipypdf
+    folder: ipypdf
+  - path: ../../setup.cfg
+  - path: ../../setup.py
+  - path: ../../LICENSE
+  - path: ../../MANIFEST.in
+  - path: ../../README.md
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps
+requirements:
+  host:
+    - python =3.8
+    - pip

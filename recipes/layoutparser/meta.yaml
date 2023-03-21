@@ -1,0 +1,26 @@
+{% set lp_version = "0.3.4" %}
+
+{% set pp_url = "c6/f1/8ab66a1784d5f12d51dcd125347df7a14ffd4be796c24e5f7a59099c4222/paddlepaddle-2.1.0-cp38-cp38-win_amd64.whl" %}  # [win]
+{% set pp_sha = "ba907858dd3e17fc7e47d4a7a0eade8256d1d17a18b1f0e6e9f3b463d28c8c33" %}  # [win]
+{% set pp_url = "03/19/5b30ab9d89c2b63a9ad071896ba45cfd580e07396b85efdfd235f321ad0c/paddlepaddle-2.1.0-cp38-cp38-manylinux1_x86_64.whl" %}  # [linux]
+{% set pp_sha = "37b67e162541ebe75ef1398a666c186163ee54eb7753e1bc35ea582ea112227f" %}  # [linux]
+{% set pp_url = "c1/d8/d1047780e43c1e1fa163c1d60a2328b0948da3ee80c57895f54f6eeedb53/paddlepaddle-2.1.0-cp38-cp38-macosx_10_14_x86_64.whl" %}  # [osx]
+{% set pp_sha = "bb639f1a0fb014370864d29517dee3834a7fd106a176251cd7f841ce58940d3c" %}  # [osx]
+
+package:
+  name: layoutparser
+  version: {{ lp_version }}
+
+source:
+  - url: https://pypi.io/packages/source/l/layoutparser/layoutparser-{{ lp_version }}.tar.gz
+    folder: layoutparser
+    sha256: 0dfb2194c36a5ad1075b8310f3cbc280c00306d1758cef127d20283f7ce085ea
+  - url: https://files.pythonhosted.org/packages/{{ pp_url }}
+    sha256: {{ pp_sha }}
+
+build:
+  number: 0
+requirements:
+  host:
+    - python =3.8
+    - pip

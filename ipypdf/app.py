@@ -26,7 +26,8 @@ os.environ["TESSDATA_PREFIX"] = f"{sys.prefix}/share/tessdata"
 
 import pytesseract as tess
 
-DEFAULT_DIRECTORY = os.path.expanduser("~/Documents")
+DEFAULT_DIRECTORY = os.path.expanduser("~/Documents/iPyPDF")
+Path(DEFAULT_DIRECTORY).mkdir(exist_ok=True)
 
 
 class App(ipyw.HBox):
