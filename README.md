@@ -34,12 +34,6 @@ see `notebooks` for additional info
 ### Development
 see `DEVELOPMENT.md`
 
-### Common Issues
-* AutoTools widget keeps saying layoutparser is not installed
-    * This is usually a problem with pywin32.
-    * Try `conda install pywin32`
-    * Also make sure that numpy is <1.19.3
-
 
 ## Features
 Within the GUI are 3 panels, Table of Contents, PDF viewer, and Tools.
