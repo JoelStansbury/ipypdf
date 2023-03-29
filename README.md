@@ -3,7 +3,7 @@ A Jupyter-based tool to help parse out structured text from a PDF document and e
 
 
 ## Installation
-### Windows Installer [Currently Broken]
+### Windows Installer
 https://drive.google.com/drive/folders/1wmQisECMor04dgv9ZXFc07zq6zcHuija?usp=sharing
 
 This will make a start-menu shortcut called "iPyPDF" which will open up the notebook for parsing documents.
