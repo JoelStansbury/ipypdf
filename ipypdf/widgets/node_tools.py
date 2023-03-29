@@ -85,7 +85,6 @@ NAVIGATOR = None
 PYTHON = sys.executable
 PREFIX = Path(PYTHON).parent
 MODELS = PREFIX / "etc/ipypdf_models"
-print(MODELS.absolute())
 LP_MODEL = MODELS / "ppyolov2_r50vd_dcn_365e_publaynet"
 
 class NodeDetail(Tab):
@@ -676,14 +675,16 @@ class AutoTools(MyTab):
     def init_layoutparser(self, _=None):
         try:
             import layoutparser as lp
+            lp.models.base_catalog.PathManager._enable_logging = False  # Disable telemetry
+            
             if LP_MODEL.exists():
-                print("Loading model from PREFIX")
-                model_path = str(LP_MODEL)
-                config_path = "PubLayNet"
-                self.lp_model = lp.models.PaddleDetectionLayoutModel(config_path, model_path)
+                self.lp_model = lp.models.PaddleDetectionLayoutModel(
+                    config_path="PubLayNet", 
+                    model_path=str(LP_MODEL),
+                    label_map={0: "Text", 1: "Title", 2: "List", 3:"Table", 4:"Figure"}
+                )
             else:
-                print("Downloading model weights")
-                self.lp_model = lp.models.PaddleDetectionLayoutModel("lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config")
+                self.lp_model = lp.models.PaddleDetectionLayoutModel(LP_MODEL)
 
             self.layout_extraction.children = [
                 self.lp_desc,

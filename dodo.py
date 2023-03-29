@@ -127,11 +127,6 @@ def task_deploy():
                 file_dep=["recipes/wand/meta.yaml"],
             ),
             dict(
-                name="lock prod",
-                actions=["conda lock -f deploy/specs/prod.yml -k explicit --filename-template deploy/locks/prod-{platform}.lock"],
-                file_dep=["deploy/specs/prod.yml"],
-            ),
-            dict(
                 name="package ipypdf",
                 actions=["conda mambabuild recipes/ipypdf"],
             ),

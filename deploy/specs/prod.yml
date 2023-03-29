@@ -44,4 +44,5 @@ dependencies:
   - gast =0.3.3
   - astor
   - protobuf <=3.20
+  - portalocker
   

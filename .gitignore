@@ -10,7 +10,6 @@ recipes/*/*.tar
 pdfs
 large_pdfs
 *.csv
-*.json
 !ipypdf/menu.json
 
 # Python
@@ -30,3 +29,4 @@ env/
 
 # doit logs
 .doit.db.*
+logs/
