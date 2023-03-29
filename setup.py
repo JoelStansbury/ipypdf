@@ -23,7 +23,7 @@ requirements = [
 
 setup(
     name="ipypdf",
-    version="0.1.7",
+    version="0.1.8",
     description="Jupyter widget for applying nlp to pdf documents",
     long_description=long_description,
     long_description_content_type="text/markdown",

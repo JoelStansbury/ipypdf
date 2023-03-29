@@ -4,11 +4,12 @@
 build/*
 dist
 *.exe
+widgetron_temp_files
+recipes/*/*.tar
 
 pdfs
 large_pdfs
 *.csv
-*.json
 !ipypdf/menu.json
 
 # Python
@@ -17,13 +18,15 @@ Untitled.*
 *.egg-info
 .ipynb_checkpoints
 .coverage
+.pytest_cache
 junit.xml
 
 
 # Environment
 env/
-envs/
+.envs/
 .venv
 
 # doit logs
 .doit.db.*
+logs/

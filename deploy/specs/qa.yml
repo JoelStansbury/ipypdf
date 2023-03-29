@@ -1,0 +1,11 @@
+name: qa
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python
+  - black
+  - isort
+  - flake8
+  - pylint

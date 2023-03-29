@@ -1,0 +1,48 @@
+name: prod
+
+channels:
+  - conda-forge
+  - local
+
+dependencies:
+  - numpy <=1.19.2,>=1.13
+  - pandas
+  - pip
+  - python =3.8
+
+  # UI
+  - ipycanvas =0.13.1
+  - ipycytoscape
+  - ipyevents
+  - ipywidgets
+  - jupyterlab
+  - jp-noui
+
+  # NLP
+  - spacy =3.2.2
+  - spacy-model-en_core_web_sm
+  - scipy
+
+  # OCR
+  - tesseract
+  - pytesseract =0.3.10
+  
+  # opencv-python
+  - py-opencv =4.5.5
+  - libopencv
+  - opencv
+  
+  # pdf utils
+  - pillow <=9.0.0  # paddlepaddle uses deprecated pillow functions
+  - poppler # needed for pdf.info
+  - pdf2image
+  - pdfplumber
+
+  # 2nd order deps for lp and pp
+  - decorator =4.4.2
+  - iopath
+  - gast =0.3.3
+  - astor
+  - protobuf <=3.20
+  - portalocker
+  

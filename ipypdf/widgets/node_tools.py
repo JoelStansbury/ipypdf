@@ -2,6 +2,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 from random import shuffle
+import sys
 
 import pandas as pd
 import pytesseract as tess
@@ -81,7 +82,10 @@ TESS_DESC = (
 )
 
 NAVIGATOR = None
-
+PYTHON = sys.executable
+PREFIX = Path(PYTHON).parent
+MODELS = PREFIX / "etc/ipypdf_models"
+LP_MODEL = MODELS / "ppyolov2_r50vd_dcn_365e_publaynet"
 
 class NodeDetail(Tab):
     def __init__(self, node, nav_hook):
@@ -671,10 +675,16 @@ class AutoTools(MyTab):
     def init_layoutparser(self, _=None):
         try:
             import layoutparser as lp
-
-            self.lp_model = lp.models.PaddleDetectionLayoutModel(
-                "lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config", device="cuda"
-            )
+            lp.models.base_catalog.PathManager._enable_logging = False  # Disable telemetry
+            
+            if LP_MODEL.exists():
+                self.lp_model = lp.models.PaddleDetectionLayoutModel(
+                    config_path="PubLayNet", 
+                    model_path=str(LP_MODEL),
+                    label_map={0: "Text", 1: "Title", 2: "List", 3:"Table", 4:"Figure"}
+                )
+            else:
+                self.lp_model = lp.models.PaddleDetectionLayoutModel(LP_MODEL)
 
             self.layout_extraction.children = [
                 self.lp_desc,
