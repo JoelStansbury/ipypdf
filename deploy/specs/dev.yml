@@ -2,12 +2,13 @@ name: dev
 
 channels:
   - conda-forge
+  - pytorch
 
 dependencies:
-  - numpy <=1.19.2,>=1.13
+  - numpy
   - pandas
   - pip
-  - python =3.8
+  - python
 
   # UI
   - ipycanvas =0.13.1
@@ -31,20 +32,18 @@ dependencies:
   - opencv
   
   # pdf utils
-  - pillow <=9.0.0  # paddlepaddle uses deprecated pillow functions
+  - pillow  # paddlepaddle uses deprecated pillow functions
   - poppler # needed for pdf.info
   - pdf2image
   
-  # 2nd order deps for lp and pp
-  - decorator =4.4.2
-  - iopath
-  - gast =0.3.3
-  - astor
-  - protobuf <=3.20
-  
+  - detectron2
+  - pytorch
+  # - mesa-libgl-cos7-aarch64 # many virtual machines do not ship with libg1
+  # (WSL only) echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+  # sudo apt-get install libgl1 --fix-missing
+
   - pip:
-    - layoutparser =0.3.4
-    - paddlepaddle =2.1.0
+    - layoutparser
 
   # Tests
   - pytest
