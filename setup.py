@@ -14,11 +14,11 @@ requirements = [
     "ipyevents",
     "ipywidgets",
     "traitlets",
-    "numpy <=1.19.2,>=1.13",
-    "pillow <=9.0.0",
+    "numpy",
+    "pillow",
     "pdf2image",
-    "protobuf <=3.20",
-    "layoutparser[paddledetection]",
+    "protobuf",
+    "layoutparser",
 ]
 
 setup(
