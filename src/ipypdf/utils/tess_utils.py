@@ -91,7 +91,7 @@ def fit_bboxes_to_text(im, tessdata):
 
 
 def scale(im, scale):
-    return im.resize((int(x * scale) for x in im.size))
+    return im.resize(tuple(int(x * scale) for x in im.size))
 
 
 def im_to_data(im, scaling_factor=1):

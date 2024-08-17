@@ -1,11 +1,9 @@
-import json
+import sys
 from collections import defaultdict
 from pathlib import Path
-from random import shuffle
-import sys
 
+import deepdoctection as dd
 import pandas as pd
-import pytesseract as tess
 import spacy
 from ipycytoscape import CytoscapeWidget
 from ipywidgets import (
@@ -20,16 +18,9 @@ from ipywidgets import (
     ToggleButton,
     VBox,
 )
-from traitlets import List, link, observe
 
 from ..utils.constants import NODE_COLORS
-from ..utils.image_utils import (
-    ImageContainer,
-    cv2_2_rel,
-    pil_2_rel,
-    rel_2_cv2,
-    rel_2_pil,
-)
+from ..utils.image_utils import ImageContainer, rel_2_pil
 from ..utils.lp_util import parse_layout
 from ..utils.nlp import tfidf_similarity
 from ..utils.table_extraction import img_2_table
@@ -39,18 +30,10 @@ from ..utils.tree_utils import (
     immediate_children,
     natural_path,
     select,
-    select_by_id,
     stringify,
 )
 from .dataframe_widget import DataFrame
-from .helper_widgets import (
-    ActionRequired,
-    CodeBlock,
-    RedText,
-    ScriptAction,
-    SmallButton,
-    Warnings,
-)
+from .helper_widgets import SmallButton, Warnings
 
 NODE_KWARGS = {
     "folder": [0, 5, 8],
@@ -62,9 +45,7 @@ NODE_KWARGS = {
 }
 
 LP_DESC = (
-    'Layout Extraction will use <a href="htt'
-    + 'ps://github.com/Layout-Parser/layout-parser" '
-    + 'style="color:blue;">layoutparser</a> to find'
+    "Layout Extraction will use deepdoctectron to find"
     + " and label images, tables, titles, and normal text within"
     + " the document. Then, the coordinates of each node are used"
     + ' to predict the "natural order" with which the nodes'
@@ -77,7 +58,7 @@ TESS_DESC = (
     + 'style="color:blue;">tesseract</a> to find'
     + " and label textblocks within the document. The order is typically"
     + " more accurate than that of LayoutExtraction. It also tends to "
-    + "handle slide shows better than layoutparser as it was trained "
+    + "handle slide shows better than layout parser as it was trained "
     + "on a much more diverse dataset."
 )
 
@@ -85,7 +66,7 @@ NAVIGATOR = None
 PYTHON = sys.executable
 PREFIX = Path(PYTHON).parent
 MODELS = PREFIX / "etc/ipypdf_models"
-LP_MODEL = MODELS / "ppyolov2_r50vd_dcn_365e_publaynet"
+
 
 class NodeDetail(Tab):
     def __init__(self, node, nav_hook):
@@ -516,10 +497,11 @@ class AutoTools(MyTab):
         self.text_extraction.children = [self.te_desc, self.tesseract_btn]
 
         # --------------------- LayoutParser ---------------------
+        self.lp_model = None
         self.layout_extraction = VBox()
         self.layoutparser_btn = Button(
             description="Parse Layout",
-            tooltip="Send each page through the LayoutParser pipeline",
+            tooltip="Send each page through the Layout Parser pipeline",
         )
         self.layoutparser_btn.on_click(self.extract_layout)
 
@@ -527,7 +509,10 @@ class AutoTools(MyTab):
             value=LP_DESC,
             layout={"width": "400px"},
         )
-        self.init_layoutparser()  # sets children according to layoutparser status
+        self.layout_extraction.children = [
+            self.lp_desc,
+            self.layoutparser_btn,
+        ]
 
         self.options = VBox(
             children=[
@@ -588,19 +573,20 @@ class AutoTools(MyTab):
         path = file_path(self.node)
 
         nodes = []
-        place_non_section_nodes_in = nodes
 
         i = 0
         total = ImageContainer(path, bulk_render=False).info["Pages"]
         m = f"Parsing Layout: {i+1}/{total}"
         self.info.add(m)
-
+        if self.lp_model is None:
+            self.lp_model = dd.get_dd_analyzer()
         for layout in parse_layout(path, self.lp_model):
             for block in layout:
 
                 if block.type == "Title":
                     nodes.append(
                         {
+                            "id": block.annotation_id,
                             "type": "section",
                             "content": [
                                 {
@@ -610,13 +596,13 @@ class AutoTools(MyTab):
                                 }
                             ],
                             "label": block.text,
-                            "children": [],
+                            "children": block.children,
                         },
                     )
-                    place_non_section_nodes_in = nodes[-1]["children"]
                 elif block.type in ["List", "Text"]:
-                    place_non_section_nodes_in.append(
+                    nodes.append(
                         {
+                            "id": block.annotation_id,
                             "type": "text",
                             "content": [
                                 {
@@ -625,11 +611,13 @@ class AutoTools(MyTab):
                                     "coords": block.relative_coordinates,
                                 }
                             ],
+                            "children": block.children,
                         },
                     )
                 elif block.type == "Figure":
-                    place_non_section_nodes_in.append(
+                    nodes.append(
                         {
+                            "id": block.annotation_id,
                             "type": "image",
                             "content": [
                                 {
@@ -638,18 +626,13 @@ class AutoTools(MyTab):
                                     "coords": block.relative_coordinates,
                                 }
                             ],
+                            "children": block.children,
                         }
                     )
                 elif block.type == "Table":
-                    imgs = ImageContainer(path, bulk_render=False)
-                    img = imgs[i]
-                    cropped_img = img.crop(block.coordinates)
-                    try:
-                        tbl = img_2_table(cropped_img)
-                    except:
-                        tbl = []
-                    place_non_section_nodes_in.append(
+                    nodes.append(
                         {
+                            "id": block.annotation_id,
                             "type": "table",
                             "content": [
                                 {
@@ -658,7 +641,8 @@ class AutoTools(MyTab):
                                     "coords": block.relative_coordinates,
                                 }
                             ],
-                            "table": tbl,
+                            "table": block.csv,
+                            "children": block.children,
                         }
                     )
 
@@ -667,43 +651,10 @@ class AutoTools(MyTab):
             m = f"Parsing Layout: {i+1}/{total}"
             self.info.add(m)
         self.info.remove(m)
-        self.node.controller.insert_nested_dicts(nodes, parent_id=str(path))
+        self.node.controller.add_multiple(nodes, parent=str(path))
 
         if isinstance(btn, Button):
             btn.disabled = False
-
-    def init_layoutparser(self, _=None):
-        try:
-            import layoutparser as lp
-            lp.models.base_catalog.PathManager._enable_logging = False  # Disable telemetry
-            
-            if LP_MODEL.exists():
-                self.lp_model = lp.models.PaddleDetectionLayoutModel(
-                    config_path="PubLayNet", 
-                    model_path=str(LP_MODEL),
-                    label_map={0: "Text", 1: "Title", 2: "List", 3:"Table", 4:"Figure"}
-                )
-            else:
-                self.lp_model = lp.models.PaddleDetectionLayoutModel(LP_MODEL)
-
-            self.layout_extraction.children = [
-                self.lp_desc,
-                self.layoutparser_btn,
-            ]
-        except ImportError:
-            self.layout_extraction.children = [
-                self.lp_desc,
-                ScriptAction(
-                    message="LayoutParser is not installed",
-                    args=[
-                        "pip",
-                        "install",
-                        "layoutparser",
-                        "layoutparser[paddledetection]",
-                    ],
-                    callback=self.init_layoutparser,
-                ),
-            ]
 
 
 class TableTools(MyTab):
@@ -725,7 +676,11 @@ class TableTools(MyTab):
         super().set_node(node)
         if "table" in self.node.data:
             rows = self.node.data["table"]
-            df = pd.DataFrame(rows)
+            if rows:
+                df = pd.DataFrame(rows[1:])
+                df.columns = rows[0]
+            else:
+                df = pd.DataFrame(rows)
             self.children = [
                 VBox(
                     children=[

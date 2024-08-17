@@ -21,12 +21,8 @@ Untitled.*
 .pytest_cache
 junit.xml
 
-
-# Environment
-env/
-.envs/
-.venv
-
 # doit logs
 .doit.db.*
-logs/
+logs/# pixi environments
+.pixi
+*.egg-info

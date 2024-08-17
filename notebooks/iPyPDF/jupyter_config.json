@@ -1,9 +1,0 @@
-{
-    "ServerApp": {
-      "tornado_settings": {
-        "page_config_data": {
-          "noui_notebook": "iPyPDF/iPyPDF.ipynb"
-        }
-      }
-    }
-  }

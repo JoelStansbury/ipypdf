@@ -2,34 +2,17 @@
 A Jupyter-based tool to help parse out structured text from a PDF document and explore the contents.
 
 
-## Installation
-### Windows Installer
-https://drive.google.com/drive/folders/1wmQisECMor04dgv9ZXFc07zq6zcHuija?usp=sharing
+## Installation (Windows)
 
-This will make a start-menu shortcut called "iPyPDF" which will open up the notebook for parsing documents.
-> You can also make this from source with `doit deploy`
-
-### From Source
-1. Clone this repo
-2. Install [MambaForge](https://conda-forge.org/miniforge/) if you do not already have it
-3. From a conda terminal, navigate to the root of this repository and execute the following commands
+1. Install [pixi](https://pixi.sh/latest/)
 ```bash
-mamba update conda mamba
-mamba install doit
-doit
+pixi run lab
 ```
 
 ## Usage
-ipypdf is built for jupyter lab but should also work in jupyter notebooks.
 
-1. Launch jupyter lab with `jupyter lab`
-```python
-from ipypdf import App
-app = App("path/to/your/pdfs", bulk_render=False)
-app
-```
-
-see `notebooks` for additional info
+1. Launch jupyter lab with `pixi run lab`
+2. Open and run `notebooks/iPyPDF.ipynb`
 
 ### Development
 see `DEVELOPMENT.md`
