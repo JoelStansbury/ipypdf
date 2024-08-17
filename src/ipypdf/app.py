@@ -118,6 +118,7 @@ class App(ipyw.HBox):
                     )
                     self.n_pages = self.imgs.info["Pages"]
                     self.fname = fname
+                    self.img_index = 0
                 if self.navigator.draw_bboxes.value:
                     if node.data.get("content", []):
                         self.img_index = node.data["content"][0]["page"]

@@ -2,14 +2,6 @@ from ipypdf.utils.image_utils import rel_2_canvas
 from ipypdf.widgets.node_tools import SubsectionTools
 
 
-def test_select_nodes(app):
-    types = ["folder", "pdf", "section", "image", "table", "text"]
-
-    for t in types:
-        node = [x for x in app.tree.dfs() if x.data["type"] == t][0]
-        app.tree_visualizer.set_trait("selected_id", node.id)
-
-
 def test_draw_textbox(app):
     """
     Simulate manual text block selection. I.e., clicking on the button

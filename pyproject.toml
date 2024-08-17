@@ -1,0 +1,43 @@
+[project]
+name = "ipypdf"
+version = "0.1.8"
+license = {file = "LICENSE"}
+description = "Add a short description here"
+
+
+[tool.pixi.project]
+platforms = ["win-64"]
+channels = ["conda-forge", "pytorch"]
+authors = ["Joel Stansbury <joel.stansbury@gtri.gatech.edu>"]
+
+[tool.pixi.tasks]
+get_deepdoctection = "pip install deepdoctection"
+setup = {cmd="pip install -e .", depends-on="get_deepdoctection"}
+fix_tesseract = "python _scripts/fix_tessdata.py"
+fix = "isort src/ tests/ && black src/ tests/ -l 79"
+test = "pytest --cov=ipypdf tests/"
+lab = {cmd="jupyter lab", depends-on=["setup", "fix_tesseract"]}
+
+[tool.pixi.dependencies]
+pip="*"
+numpy=">=1.26,<2"
+pandas=">=2,<3"
+ipycanvas="*"
+ipycytoscape="*"
+ipyevents="*"
+ipywidgets="*"
+jupyterlab="*"
+spacy="==3.5.4"
+spacy-model-en_core_web_sm="*"
+scipy="==1.14"
+tesseract=">=5,<6"
+pytesseract=">=0.3,<1"
+py-opencv=">=4,<5"
+pdf2image=">=1.17,<2"
+pytorch=">=2.4,<3"
+torchvision=">=0.19,<1"
+black="*"
+isort="*"
+pytest="*"
+pytest-cov="*"
+
