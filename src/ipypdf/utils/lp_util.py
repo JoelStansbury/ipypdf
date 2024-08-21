@@ -64,7 +64,9 @@ def parse_layout(fname, model=None, start=0, stop=-1, ignore_warning=False):
     df.reset_state()  # Trigger some initialization
 
     for page in iter(df):
-        layout = list(page.layouts) + list(page.tables)
+        figures = [a for a in page.annotations if a._category_name == dd.LayoutType.FIGURE]
+        layout = list(page.layouts) + list(page.tables) + figures
+
         for block in layout:
             block.relative_coordinates = pil_2_rel(
                 block.bbox, page.width, page.height
