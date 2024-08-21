@@ -2,6 +2,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+import PIL
 import deepdoctection as dd
 import pandas as pd
 import spacy
@@ -18,6 +19,8 @@ from ipywidgets import (
     ToggleButton,
     VBox,
 )
+
+from ..utils.deplot import try_to_parse_chart_data
 
 from ..utils.constants import NODE_COLORS
 from ..utils.image_utils import ImageContainer, rel_2_pil
@@ -179,16 +182,24 @@ class ImageTools(MyTab):
         super().__init__()
         self.node = node
 
-        text = SmallButton(
+        self.btn = SmallButton(
             "align-left", "Add a description for the image", self.add_node
         )
 
         self._types = {
-            text: "text",
+            self.btn: "text",
         }
+        self.children = [self.btn, self.delete_btn]
 
-        self.children = [text, self.delete_btn]
-
+    def set_node(self, node):
+        self.node = node
+        if "content" in node.data and "table" in node.data["content"][0]:
+            rows = node.data["content"][0]["table"]
+            if rows:
+                df = pd.DataFrame(rows)
+                self.children = [self.btn, self.delete_btn, DataFrame(df, max_char=20)]
+                return
+        self.children = [self.btn, self.delete_btn]
 
 class TextBlockTools(MyTab):
     def __init__(self, node):
@@ -624,6 +635,7 @@ class AutoTools(MyTab):
                                     "value": None,
                                     "page": i,
                                     "coords": block.relative_coordinates,
+                                    **try_to_parse_chart_data(PIL.Image.fromarray(block.viz()))
                                 }
                             ],
                             "children": block.children,
